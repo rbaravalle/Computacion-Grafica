@@ -1,0 +1,106 @@
+<html>
+
+<head>
+<title>Practica 1</title>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+<script type="text/javascript">
+
+    var MIN = -1;
+    var MAX = 1;
+    var MINY = -1;
+    var MAXY = 1;
+
+    var STEP = (MAX-MIN)/1000;
+
+    var click;
+    var xPos, yPos;
+    var ctx;
+    var escala = 2;
+    var x, y;         // coords actuales al hacer click con el mouse onButtonDown()
+    var cursorX, cursorY, cursorA = 0;
+    var pi3 = Math.PI/3;
+
+        
+
+
+function start() {
+    var canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d")
+
+    var w = document.getElementById('canvas').width;
+    var h = document.getElementById('canvas').height;
+
+    linea(100,200,0,100);
+
+}
+
+function linea(x0,y0,x1,y1) {
+    var dx = x1-x0;
+    var dy = y1-y0;
+
+    var x = x0;
+    var y = y0;
+    ctx.fillStyle = "rgba(255,255,255,1.0)";
+
+    if(Math.abs(dx) > Math.abs(dy)) {
+        if(dx>=0) inc = 1; else inc =-1;
+        var m = dy/dx;
+        if(dx < 0 && dy < 0) m = -m;
+        while(x != x1) {
+            ctx.fillRect(Math.round(x),Math.round(y),1,1);
+            x+=inc;
+            y+=m;
+        }
+    }
+    else {
+        if(dy>=0) inc = 1; else inc = -1;
+        var m = dx/dy;
+        if(dx < 0 && dy < 0) m = -m;
+        while(y != y1) {
+            ctx.fillRect(Math.round(x),Math.round(y),1,1);
+            y+=inc;
+            x+=m;
+        }
+    }
+}
+
+function lineaSimple(x0,y0,x1,y1) {
+    var dx = x1-x0;
+    var dy = y1-y0;
+
+    var m = dy/dx;
+
+    var x = x0;
+    var y = y0;   
+
+    ctx.fillStyle = "rgba(255,255,255,1.0)";
+    while(x <= x1) {
+        ctx.fillRect(Math.round(x),Math.round(y),1,1);
+        x++;
+        y+=m;
+    }
+     
+}
+</script>
+
+
+</head>
+
+
+<body onload="start()" style="background-color:rgb(150,150,150);">
+
+    <div style="text-align:center; font-size:50px">DDA</div>
+   
+    <br />
+
+    <div id="canvas-container" style="float:left;">
+        <canvas id="canvas" style="background-color:black;" width="200" height="200"></canvas>
+    </div>
+
+
+
+</body>
+
+</html>
+

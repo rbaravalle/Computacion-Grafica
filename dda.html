@@ -32,7 +32,10 @@ function start() {
     var w = document.getElementById('canvas').width;
     var h = document.getElementById('canvas').height;
 
-    conversionScan(0,0,maxcoord/2,maxcoord,0,maxcoord/2);
+    //conversionScan(0,0,maxcoord/2,maxcoord/2,0,maxcoord/2);
+
+    circBresenham(88,256,256);
+    circDDA(88,256,256);
 }
 function lineaBresenham(x0,y0,x1,y1) {
     var dx = x1-x0;
@@ -103,22 +106,21 @@ function lineaDDA(x0,y0,x1,y1) {
     }
 }
 
-function circDDA(radio) {
+function circDDA(radio,cx,cy) {
     var rx = radio;
     var x = Math.round(rx);
     var y = 0; // se comienza en el punto (r,0)
 
     while(y<x) {
         ctx.fillStyle = "rgba(255,255,255,1.0)";
-        var tx = x; var ty = y;
-        ctx.fillRect(tx,ty,1,1);
-        ctx.fillRect(ty,tx,1,1);
-        ctx.fillRect(-tx,ty,1,1);
-        ctx.fillRect(tx,-ty,1,1);
-        ctx.fillRect(tx,-ty,1,1);
-        ctx.fillRect(ty,-tx,1,1);
-        ctx.fillRect(-tx,-ty,1,1);
-        ctx.fillRect(-ty,-tx,1,1);
+        ctx.fillRect(x+cx,y+cy,1,1);
+        ctx.fillRect(y+cx,x+cy,1,1);
+        ctx.fillRect(-x+cx,y+cy,1,1);
+        ctx.fillRect(x+cx,-y+cy,1,1);
+        ctx.fillRect(x+cx,-y+cy,1,1);
+        ctx.fillRect(y+cx,-x+cy,1,1);
+        ctx.fillRect(-x+cx,-y+cy,1,1);
+        ctx.fillRect(-y+cx,-x+cy,1,1);
 
         rx -= y/rx;
         x = Math.round(rx);
@@ -126,7 +128,7 @@ function circDDA(radio) {
     }
 }
 
-function circBresenham(radio) {
+function circBresenham(radio,cx,cy) {
     var rx = radio;
     var x = rx;
     var y = 0; // se comienza en el punto (r,0)
@@ -134,15 +136,14 @@ function circBresenham(radio) {
 
     while(y<x) {
         ctx.fillStyle = "rgba(255,255,255,1.0)";
-        var tx = x; var ty = y;
-        ctx.fillRect(tx,ty,1,1);
-        ctx.fillRect(ty,tx,1,1);
-        ctx.fillRect(-tx,ty,1,1);
-        ctx.fillRect(tx,-ty,1,1);
-        ctx.fillRect(tx,-ty,1,1);
-        ctx.fillRect(ty,-tx,1,1);
-        ctx.fillRect(-tx,-ty,1,1);
-        ctx.fillRect(-ty,-tx,1,1);
+        ctx.fillRect(x+cx,y+cy,1,1);
+        ctx.fillRect(y+cx,x+cy,1,1);
+        ctx.fillRect(-x+cx,y+cy,1,1);
+        ctx.fillRect(x+cx,-y+cy,1,1);
+        ctx.fillRect(x+cx,-y+cy,1,1);
+        ctx.fillRect(y+cx,-x+cy,1,1);
+        ctx.fillRect(-x+cx,-y+cy,1,1);
+        ctx.fillRect(-y+cx,-x+cy,1,1);
 
         e += 2*y+1;
         y++;

@@ -116,7 +116,7 @@ function circDDA(radio,cx,cy) {
         ctx.fillRect(x+cx,y+cy,1,1);
         ctx.fillRect(y+cx,x+cy,1,1);
         ctx.fillRect(-x+cx,y+cy,1,1);
-        ctx.fillRect(x+cx,-y+cy,1,1);
+        ctx.fillRect(-y+cx,x+cy,1,1);
         ctx.fillRect(x+cx,-y+cy,1,1);
         ctx.fillRect(y+cx,-x+cy,1,1);
         ctx.fillRect(-x+cx,-y+cy,1,1);
@@ -140,7 +140,7 @@ function circBresenham(radio,cx,cy) {
         ctx.fillRect(y+cx,x+cy,1,1);
         ctx.fillRect(-x+cx,y+cy,1,1);
         ctx.fillRect(x+cx,-y+cy,1,1);
-        ctx.fillRect(x+cx,-y+cy,1,1);
+        ctx.fillRect(-y+cx,x+cy,1,1);
         ctx.fillRect(y+cx,-x+cy,1,1);
         ctx.fillRect(-x+cx,-y+cy,1,1);
         ctx.fillRect(-y+cx,-x+cy,1,1);

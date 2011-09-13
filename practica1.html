@@ -344,26 +344,28 @@
 
     cuad.prototype.transformar = function(t) {
         var v = multVM([this.p1.x,this.p1.y,1.0],t);
-        this.p1.x = v[0];
-        this.p1.y = v[1];
+        var res = [];
+        res.push(v[0],v[1])
         v = multVM([this.p2.x,this.p2.y,1.0],t);
-        this.p2.x = v[0];
-        this.p2.y = v[1];
+        res.push(v[0],v[1])
         v = multVM([this.p3.x,this.p3.y,1.0],t);
-        this.p3.x = v[0];
-        this.p3.y = v[1];
+        res.push(v[0],v[1])
         v = multVM([this.p4.x,this.p4.y,1.0],t);
-        this.p4.x = v[0];
-        this.p4.y = v[1];
+        res.push(v[0],v[1])
+        return res;
     }
 
     cuad.prototype.graf_cuad = function(o,at,c) {
         var t1 = prod_matriz(o.t,at);
-        this.transformar(t1);
-        linea(this.p1,this.p2,c);
-        linea(this.p2,this.p3,c);
-        linea(this.p3,this.p4,c);
-        linea(this.p4,this.p1,c);
+        var arr = this.transformar(t1);
+        var p1 = {"x":arr[0],"y":arr[1]};
+        var p2 = {"x":arr[2],"y":arr[3]};
+        var p3 = {"x":arr[4],"y":arr[5]};
+        var p4 = {"x":arr[6],"y":arr[7]};
+        linea(p1,p2,c);
+        linea(p2,p3,c);
+        linea(p3,p4,c);
+        linea(p4,p1,c);
     }
 
     objeto.prototype.graf_obj = function(t,c) {
@@ -403,19 +405,20 @@
 
         var id = [[1,0,0],[0,1,0],[0,0,1]];
         var m1 = trasladar(59,20);
-        var m2 = trasladar(-50,-50);
+        var m2 = trasladar(-50,0);
         var m3 = rotar(0.3);
         var m4 = escalar(1,2);
         var m5 = rotar(-0.3);
 
-        var c = new cuad(new punto(0,0),new punto(100,0),new punto(100,100), new punto(0,100));
-        var o = new objeto(id,c,'cuad');
-        o.graf_obj(m4,[0.3,0.5,0.6]);
-
         var c2 = new cuad(new punto(-30,0),new punto(0,0),new punto(0,-30), new punto(-30,-30));
         var c3 = new cuad(new punto(-100,0),new punto(0,0),new punto(0,-100), new punto(-100,-100));
-        var o2 = new objeto(m4,[new objeto(m3,c2,'cuad'),new objeto(m5,c3,'cuad')],'lista');
-        o2.graf_obj(id,[0.8,0.5,0.2]);
+
+        var casa = [new objeto(id,c2,'cuad'),new objeto(id,c3,'cuad'),new objeto(m2,c2,'cuad')];
+
+        var escena = [new objeto(m5,casa,'lista'),new objeto(m3,casa,'lista')];
+
+        var total = new objeto(id,escena,'lista');
+        total.graf_obj(id,[0.3,0.5,0.6]);
  
         initBuffers();
         dibujarEscena();

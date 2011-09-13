@@ -161,7 +161,7 @@
         }
     }
 
-    function lineaBresenham(x0,y0,x1,y1) {
+    function lineaBresenham(x0,y0,x1,y1,c) {
         var dx = x1-x0;
         var dy = y1-y0;
 
@@ -177,7 +177,7 @@
         if(Math.abs(dx) >= Math.abs(dy)) {
             var e = iy-dx;
             for (var x = x0; x != x1; x+=incX) {
-                putpixel(x,y);
+                putpixel(x,y,c);
                 if(e>0) {
                     y+=incY;
                     e -= Math.abs(ix);
@@ -188,7 +188,7 @@
         else {
             var e = ix-dy;
             for (var y = y0; y != y1; y+=incY) {
-                putpixel(x,y);
+                putpixel(x,y,c);
                 if(e>0) {
                     x+=incX;
                     e -= Math.abs(iy);
@@ -293,7 +293,7 @@
     }
 
     function linea(p1,p2,c) {
-        return lineaDDA(p1.x,p1.y,p2.x,p2.y,c);
+        return lineaBresenham(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p2.x),Math.floor(p2.y),c);
     }
 
     function punto(x,y,c) {
@@ -334,10 +334,10 @@
 
     function multVM(v,t) {
         var c = [];
-        for(i=0;i<=2;i++) {
-            c[i] = 0;
-            for(k=0;k<=2;k++)
-               c[i] += v[k]*t[k][i];
+        for(var j=0;j<=2;j++) {
+            c[j] = 0;
+            for(var k=0;k<=2;k++)
+               c[j] += v[k]*t[j][k];
         }
         return c;
     }
@@ -358,8 +358,7 @@
     }
 
     cuad.prototype.graf_cuad = function(o,at,c) {
-        var t = o.t;
-        var t1 = prod_matriz(t,at);
+        var t1 = prod_matriz(o.t,at);
         this.transformar(t1);
         linea(this.p1,this.p2,c);
         linea(this.p2,this.p3,c);
@@ -378,6 +377,20 @@
             }
         }
     }
+
+    function rotar(alpha) {
+        return [[Math.cos(alpha),-Math.sin(alpha),0],
+                [Math.sin(alpha),Math.cos(alpha),0],
+                [0,0,1]];
+    }
+
+    function trasladar(x,y) {
+        return [[1,0,x],[0,1,y],[0,0,1]];
+    }
+
+    function escalar(tx,ty) {
+        return [[tx,0,0],[0,ty,0],[0,0,1]];
+    }
  
     function webGLStart() {
         // se obtiene el objeto canvas del codigo html (como un objeto javascript)
@@ -387,21 +400,21 @@
         initGL(canvas);
         initShaders();
         initVariables();
-        putpixel(0,0);
-        putpixel(2,2);
-        putpixel(1,1);
-        lineaDDA(0,0,100,100);
-        lineaBresenham(200,200,100,100);
 
         var id = [[1,0,0],[0,1,0],[0,0,1]];
+        var m1 = trasladar(59,20);
+        var m2 = trasladar(-50,-50);
+        var m3 = rotar(0.3);
+        var m4 = escalar(1,2);
+        var m5 = rotar(-0.3);
 
-        var c = new cuad(new punto(-10,0),new punto(100,0),new punto(100,100), new punto(0,100));
+        var c = new cuad(new punto(0,0),new punto(100,0),new punto(100,100), new punto(0,100));
         var o = new objeto(id,c,'cuad');
-        c.graf_cuad(o,id,[0.3,0.5,0.6]);
+        o.graf_obj(m4,[0.3,0.5,0.6]);
 
         var c2 = new cuad(new punto(-30,0),new punto(0,0),new punto(0,-30), new punto(-30,-30));
         var c3 = new cuad(new punto(-100,0),new punto(0,0),new punto(0,-100), new punto(-100,-100));
-        var o2 = new objeto(id,[new objeto(id,c2,'cuad'),new objeto(id,c3,'cuad')],'lista');
+        var o2 = new objeto(m4,[new objeto(m3,c2,'cuad'),new objeto(m5,c3,'cuad')],'lista');
         o2.graf_obj(id,[0.8,0.5,0.2]);
  
         initBuffers();

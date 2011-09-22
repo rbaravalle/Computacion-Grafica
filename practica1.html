@@ -2,7 +2,7 @@
 <html> 
  
 <head> 
-<title>Un triangulo en WebGL</title> 
+<title>Pr&aacute;ctico 1</title> 
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"> 
  
 <script type="text/javascript" src="shaders.js"></script> 
@@ -400,25 +400,33 @@
 
         // inicializaciones
         initGL(canvas);
-        initShaders();
+        initShaders(gl);
         initVariables();
 
         var id = [[1,0,0],[0,1,0],[0,0,1]];
-        var m1 = trasladar(59,20);
-        var m2 = trasladar(-50,0);
-        var m3 = rotar(0.3);
-        var m4 = escalar(1,2);
+        var m2 = trasladar(-150,-100);
+        var m4 = escalar(0.25,0.4);
         var m5 = rotar(-0.3);
 
-        var c2 = new cuad(new punto(-30,0),new punto(0,0),new punto(0,-30), new punto(-30,-30));
-        var c3 = new cuad(new punto(-100,0),new punto(0,0),new punto(0,-100), new punto(-100,-100));
+        var c1 = new cuad(new punto(-50,0),new punto(-50,100),new punto(50,100), new punto(50,0));
+        var c2 = new cuad(new punto(-40,90),new punto(-40,60),new punto(40,60), new punto(40,90));
+        var c3 = new cuad(new punto(-40,10),new punto(-40,40),new punto(40,40), new punto(40,10));
 
-        var casa = [new objeto(id,c2,'cuad'),new objeto(id,c3,'cuad'),new objeto(m2,c2,'cuad')];
+        var c4 = new cuad(new punto(-40,10),new punto(-40,40),new punto(40,40), new punto(40,10));
 
-        var escena = [new objeto(m5,casa,'lista'),new objeto(m3,casa,'lista')];
+        var puerta = [new objeto(id,c1,'cuad'),new objeto(id,c2,'cuad'),new objeto(id,c3,'cuad')];
+        var puerta1 = new objeto(trasladar(-25,0),puerta,'lista');
+        var puerta2 = new objeto(trasladar(25,0),puerta,'lista');
+        
+
+        var frente = [new objeto(trasladar(-55,0),puerta,'lista'),new objeto(trasladar(65,0),puerta,'lista')];
+
+        //var casa = [new objeto(id,frente,'lista')] 
+
+        var escena = [new objeto(id,frente,'lista')]//,new objeto(m2,casa,'lista')];
 
         var total = new objeto(id,escena,'lista');
-        total.graf_obj(id,[0.3,0.5,0.6]);
+        total.graf_obj(id,[1.0,1.0,1.0]);
  
         initBuffers();
         dibujarEscena();

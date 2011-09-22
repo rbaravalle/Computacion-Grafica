@@ -408,18 +408,20 @@
         var m4 = escalar(0.25,0.4);
         var m5 = rotar(-0.3);
 
-        var c1 = new cuad(new punto(-50,0),new punto(-50,100),new punto(50,100), new punto(50,0));
-        var c2 = new cuad(new punto(-40,90),new punto(-40,60),new punto(40,60), new punto(40,90));
-        var c3 = new cuad(new punto(-40,10),new punto(-40,40),new punto(40,40), new punto(40,10));
+        var c1 = new cuad(new punto(-40,0),new punto(-40,100),new punto(40,100), new punto(40,0));
+        var c2 = new cuad(new punto(-30,90),new punto(-30,60),new punto(30,60), new punto(30,90));
+        var c3 = new cuad(new punto(-30,10),new punto(-30,40),new punto(30,40), new punto(30,10));
 
-        var c4 = new cuad(new punto(-40,10),new punto(-40,40),new punto(40,40), new punto(40,10));
+        var c4 = new cuad(new punto(-30,10),new punto(-30,40),new punto(30,40), new punto(30,10));
 
         var puerta = [new objeto(id,c1,'cuad'),new objeto(id,c2,'cuad'),new objeto(id,c3,'cuad')];
         var puerta1 = new objeto(trasladar(-25,0),puerta,'lista');
         var puerta2 = new objeto(trasladar(25,0),puerta,'lista');
         
-
-        var frente = [new objeto(trasladar(-55,0),puerta,'lista'),new objeto(trasladar(65,0),puerta,'lista')];
+        var techo = new cuad(new punto(-150,120),new punto(-100,150),new punto(100,150), new punto(150,120));
+        var pared = new cuad(new punto(-150,120),new punto(-150,0),new punto(150,0), new punto(150,120));
+        var frente = [new objeto(trasladar(-55,0),puerta,'lista'),new objeto(trasladar(60,0),puerta,'lista'),
+                      new objeto(id,techo,'cuad'),new objeto(id,pared,'cuad')];
 
         //var casa = [new objeto(id,frente,'lista')] 
 

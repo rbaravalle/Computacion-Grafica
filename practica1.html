@@ -47,6 +47,9 @@
     var colorsBuffer;
     var colors;
     var maxcoord = 256;
+    var tipoLinea = 0;
+    var tLinea = ['DDA','Bresenham','Nativo'];
+    var numEsc = 0;
 
     function initGL(canvas) {
         try {
@@ -55,17 +58,6 @@
             gl.viewportHeight = canvas.height;
         } catch (e) {
             alert("No es posible inicializar WebGL");
-        }
-    }
-
-    // entre 0 y maxcoord
-    function putpixel(x,y,c) {
-        points.push(x/maxcoord,y/maxcoord);
-        if(c) {
-            colors.push(c[0],c[1],c[2],1.0);
-        }
-        else {
-            colors.push(1.0,1.0,1.0,1.0);
         }
     }
 
@@ -101,14 +93,27 @@
         gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
 
-        // se dibujan los buffers en pantalla
-        gl.drawArrays(gl.POINTS, 0, points.length/2);
-
+        if(tipoLinea == 2) // nativo
+           gl.drawArrays(gl.LINES, 0, points.length/2);
+        else // se dibujan los buffers en pantalla
+           gl.drawArrays(gl.POINTS, 0, points.length/2);    
     } 
 
+    // simulacion de buffers
     function initVariables() {
         points = [];
         colors = [];
+    }
+
+    // entre 0 y maxcoord
+    function putpixel(x,y,c) {
+        points.push(x/maxcoord,y/maxcoord);
+        if(c) {
+            colors.push(c[0],c[1],c[2],1.0);
+        }
+        else {
+            colors.push(1.0,1.0,1.0,1.0);
+        }
     }
 
     function lineaDDA(x0,y0,x1,y1,c) {
@@ -121,7 +126,7 @@
         if(Math.abs(dx) > Math.abs(dy)) {
             if(dx>=0) inc = 1; else inc =-1;
             var m = dy/dx;
-            if((dx < 0 && m > 0) || (dx > 0 && m < 0)) m = -m;
+            if((dy < 0 && m > 0) || (dy > 0 && m < 0)) m = -m;
             while(x != x1) {
                 putpixel(Math.round(x),Math.round(y),c);
                 x+=inc;
@@ -137,27 +142,6 @@
                 y+=inc;
                 x+=m;
             }
-        }
-    }
-
-    function circDDA(radio,cx,cy) {
-        var rx = radio;
-        var x = Math.round(rx);
-        var y = 0; // se comienza en el punto (r,0)
-
-        while(y<x) {
-            putpixel(x+cx,y+cy);
-            putpixel(y+cx,x+cy);
-            putpixel(-x+cx,y+cy);
-            putpixel(-y+cx,x+cy);
-            putpixel(x+cx,-y+cy);
-            putpixel(y+cx,-x+cy);
-            putpixel(-x+cx,-y+cy);
-            putpixel(-y+cx,-x+cy);
-
-            rx -= y/rx;
-            x = Math.round(rx);
-            y++;
         }
     }
 
@@ -198,6 +182,27 @@
         }
     }
 
+    function circDDA(radio,cx,cy) {
+        var rx = radio;
+        var x = Math.round(rx);
+        var y = 0; // se comienza en el punto (r,0)
+
+        while(y<x) {
+            putpixel(x+cx,y+cy);
+            putpixel(y+cx,x+cy);
+            putpixel(-x+cx,y+cy);
+            putpixel(-y+cx,x+cy);
+            putpixel(x+cx,-y+cy);
+            putpixel(y+cx,-x+cy);
+            putpixel(-x+cx,-y+cy);
+            putpixel(-y+cx,-x+cy);
+
+            rx -= y/rx;
+            x = Math.round(rx);
+            y++;
+        }
+    }
+
     function circBresenham(radio,cx,cy) {
         var rx = radio;
         var x = rx;
@@ -233,10 +238,12 @@
         if(Math.abs(dx) > Math.abs(dy)) {
             if(dx>=0) inc = 1; else inc =-1;
             var m = dy/dx;
-            if((dx < 0 && m > 0) || (dx > 0 && m < 0)) m = -m;
+            if((dy < 0 && m > 0) || (dy > 0 && m < 0)) m = -m;
             while(x != x1) {
-                if(Math.round(x) > maxx[Math.round(y)-miny]) maxx[Math.round(y)-miny] = Math.round(x)
-                if(Math.round(x) < minx[Math.round(y)-miny]) minx[Math.round(y)-miny] = Math.round(x);
+                var i = Math.round(y)-miny;
+                var px = Math.round(x);
+                if(px > maxx[i]) maxx[i] = px;
+                if(px < minx[i]) minx[i] = px;
                 x+=inc;
                 y+=m;
             }
@@ -246,8 +253,10 @@
             var m = dx/dy;
             if((dx < 0 && m > 0) || (dx > 0 && m < 0)) m = -m;
             while(y != y1) {
-                if(Math.round(x) > maxx[Math.round(y)-miny]) maxx[Math.round(y)-miny] = Math.round(x)
-                if(Math.round(x) < minx[Math.round(y)-miny]) minx[Math.round(y)-miny] = Math.round(x)
+                var i = Math.round(y)-miny;
+                var px = Math.round(x);
+                if(px > maxx[i]) maxx[i] = px;
+                if(px < minx[i]) minx[i] = px;
                 y+=inc;
                 x+=m;
             }
@@ -256,7 +265,7 @@
         return {"minx": minx,"maxx": maxx};
     }
 
-    function conversionScan(x0,y0,x1,y1,x2,y2) {
+    function conversionScan(x0,y0,x1,y1,x2,y2,c) {
         // dibuja un triangulo entre los puntos especificados
         var maxy = y0;
         if(y1 > maxy) maxy = y1;
@@ -266,34 +275,37 @@
         if(y1 < miny) miny = y1;
         if(y2 < miny) miny = y2;
 
-        var cantY = maxy-miny;
-
         var minx = [];
         var maxx = [];
-        for(var i = 0; i <= cantY; i++) {
-            minx[i] = maxcoord+1;
-            maxx[i] = -1;
+        for(var i = miny; i < maxy; i++) {
+            minx[i-miny] = maxcoord+1;
+            maxx[i-miny] = -maxcoord-1;
         }
-
         var t = lineaDDAscan(x0,y0,x1,y1,minx,maxx,miny);
         minx = t.minx;
         maxx = t.maxx;
-
         t = lineaDDAscan(x1,y1,x2,y2,minx,maxx,miny);
         minx = t.minx;
         maxx = t.maxx;
-
         t = lineaDDAscan(x0,y0,x2,y2,minx,maxx,miny);
         minx = t.minx;
         maxx = t.maxx;
-        for(var i = 0; i < cantY; i++) {
-            lineaDDA(minx[i], i+miny,maxx[i],i+miny);
+
+        for(var i = miny+1; i <= maxy; i++) {
+            lineaDDA(minx[i-miny], i,maxx[i-miny],i,c);
         }
         
     }
 
     function linea(p1,p2,c) {
-        return lineaBresenham(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p2.x),Math.floor(p2.y),c);
+        if(tipoLinea == 2) { // nativo
+            putpixel(Math.floor(p1.x),Math.floor(p1.y),c);
+            putpixel(Math.floor(p2.x),Math.floor(p2.y),c);
+        }
+        if(tipoLinea == 1)
+            return lineaBresenham(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p2.x),Math.floor(p2.y),c);
+        if(tipoLinea == 0)
+            return lineaDDA(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p2.x),Math.floor(p2.y),c);
     }
 
     function punto(x,y,c) {
@@ -394,7 +406,7 @@
         return [[tx,0,0],[0,ty,0],[0,0,1]];
     }
  
-    function webGLStart() {
+    function calc() {
         // se obtiene el objeto canvas del codigo html (como un objeto javascript)
         var canvas = document.getElementById("canvas");
 
@@ -404,31 +416,39 @@
         initVariables();
 
         var id = [[1,0,0],[0,1,0],[0,0,1]];
-        var m2 = trasladar(-150,-100);
-        var m4 = escalar(0.25,0.4);
-        var m5 = rotar(-0.3);
 
         var c1 = new cuad(new punto(-40,0),new punto(-40,100),new punto(40,100), new punto(40,0));
         var c2 = new cuad(new punto(-30,90),new punto(-30,60),new punto(30,60), new punto(30,90));
         var c3 = new cuad(new punto(-30,10),new punto(-30,40),new punto(30,40), new punto(30,10));
 
-        var c4 = new cuad(new punto(-30,10),new punto(-30,40),new punto(30,40), new punto(30,10));
+        var ch1 = new cuad(new punto(-100,170),new punto(-100,200),new punto(-70,200), new punto(-70,170));
+        var ch2 = new cuad(new punto(-105,200),new punto(-105,220),new punto(-65,220), new punto(-65,200));
 
         var puerta = [new objeto(id,c1,'cuad'),new objeto(id,c2,'cuad'),new objeto(id,c3,'cuad')];
-        var puerta1 = new objeto(trasladar(-25,0),puerta,'lista');
-        var puerta2 = new objeto(trasladar(25,0),puerta,'lista');
         
-        var techo = new cuad(new punto(-150,120),new punto(-100,150),new punto(100,150), new punto(150,120));
-        var pared = new cuad(new punto(-150,120),new punto(-150,0),new punto(150,0), new punto(150,120));
-        var frente = [new objeto(trasladar(-55,0),puerta,'lista'),new objeto(trasladar(60,0),puerta,'lista'),
-                      new objeto(id,techo,'cuad'),new objeto(id,pared,'cuad')];
+        var techo = new cuad(new punto(-140,140),new punto(-100,170),new punto(100,170), new punto(140,140));
+        var chimenea = [new objeto(id,ch1,'cuad'),new objeto(id,ch2,'cuad')];
+        var pared = new cuad(new punto(-130,140),new punto(-130,0),new punto(130,0), new punto(130,140));
 
-        //var casa = [new objeto(id,frente,'lista')] 
+        var casa = [new objeto(trasladar(-55,0),puerta,'lista'),new objeto(trasladar(60,0),puerta,'lista'),
+                      new objeto(id,techo,'cuad'),new objeto(id,pared,'cuad'),new objeto(id,chimenea,'lista')];
 
-        var escena = [new objeto(id,frente,'lista')]//,new objeto(m2,casa,'lista')];
+        var p1 = new punto(50,50);
+        var p2 = new punto(130,120);
 
-        var total = new objeto(id,escena,'lista');
-        total.graf_obj(id,[1.0,1.0,1.0]);
+        var escena;
+
+        if(numEsc == 0) {
+            escena = new objeto(id,casa,'lista');
+            escena.graf_obj(id);
+        }
+        if(numEsc == 1) {
+            linea(p1,p2);
+        }
+        if(numEsc == 2) {
+            conversionScan(-200,100,-205,100,100,40);
+        }
+        
  
         initBuffers();
         dibujarEscena();
@@ -438,7 +458,10 @@
 </head> 
  
  
-<body onload="webGLStart();"> 
+<body onload="calc();"> 
+    <input id="sigtLinea" type="button" value=">" onclick="tipoLinea++; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>Tipo de Linea <span id="tipoLinea" >DDA</span><br/>
+
+    <input type="button" value=">" onclick="numEsc++; numEsc%=3; calc();"/>Escena <br/>
     <canvas id="canvas" width="500" height="500"></canvas>  
 </body> 
  

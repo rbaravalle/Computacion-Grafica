@@ -6,7 +6,7 @@
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"> 
  
 <script type="text/javascript" src="shaders.js"></script> 
-<script type="text/javascript" src="glMatrix-0.9.5.min.js"></script> 
+<script type="text/javascript" src="jscolor/jscolor.js"></script>
 
 <!-- Shaders - ignorar en esta leccion -->
 <script id="shader-fs" type="x-shader/x-fragment"> 
@@ -50,6 +50,8 @@
     var tipoLinea = 0;
     var tLinea = ['DDA','Bresenham','Nativo'];
     var numEsc = 0;
+    var escalaX = 1;
+    var escalaY = 1;
 
     function initGL(canvas) {
         try {
@@ -416,6 +418,7 @@
         initVariables();
 
         var id = [[1,0,0],[0,1,0],[0,0,1]];
+        var mprinc = escalar(escalaX,escalaY);
 
         var c1 = new cuad(new punto(-40,0),new punto(-40,100),new punto(40,100), new punto(40,0));
         var c2 = new cuad(new punto(-30,90),new punto(-30,60),new punto(30,60), new punto(30,90));
@@ -433,20 +436,30 @@
         var casa = [new objeto(trasladar(-55,0),puerta,'lista'),new objeto(trasladar(60,0),puerta,'lista'),
                       new objeto(id,techo,'cuad'),new objeto(id,pared,'cuad'),new objeto(id,chimenea,'lista')];
 
-        var p1 = new punto(50,50);
-        var p2 = new punto(130,120);
+        var p1 = new punto(Math.floor(-100*escalaX),Math.floor(-100*escalaY));
+        var p2 = new punto(Math.floor(100*escalaX),Math.floor(100*escalaY));
 
         var escena;
 
+        var jscolor1 = document.getElementById('color1');
+        var c = [parseFloat(jscolor1.color.rgb[0]),
+              parseFloat(jscolor1.color.rgb[1]),
+              parseFloat(jscolor1.color.rgb[2])];
+
         if(numEsc == 0) {
             escena = new objeto(id,casa,'lista');
-            escena.graf_obj(id);
+            escena.graf_obj(mprinc,c);
         }
         if(numEsc == 1) {
-            linea(p1,p2);
+            linea(p1,p2,c);
         }
         if(numEsc == 2) {
-            conversionScan(-200,100,-205,100,100,40);
+            conversionScan(Math.floor(-100*escalaX),
+                           Math.floor(-100*escalaY),
+                           Math.floor(0*escalaX),
+                           Math.floor(100*escalaY),
+                           Math.floor(100*escalaX),
+                           Math.floor(-100*escalaY),c);
         }
         
  
@@ -459,10 +472,20 @@
  
  
 <body onload="calc();"> 
-    <input id="sigtLinea" type="button" value=">" onclick="tipoLinea++; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>Tipo de Linea <span id="tipoLinea" >DDA</span><br/>
+    <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 1</div>
+    <canvas id="canvas" width="500" height="500" style="float:left"></canvas>  
+    Color <input id="color1" class="color" value="C7BBAC" size=5 onchange="calc();"><br/>
+    <input id="sigtLineamenos" type="button" value="<" onclick="tipoLinea--; if(tipoLinea<0) tipoLinea = tLinea.length-1; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>
+    <input id="sigtLineamas" type="button" value=">" onclick="tipoLinea++; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>
+    Tipo de Linea <span id="tipoLinea" >DDA</span>
+    <br/>
 
+    <input type="button" value="<" onclick="numEsc--; if(numEsc<0) numEsc = 2; numEsc%=3; calc();"/>
     <input type="button" value=">" onclick="numEsc++; numEsc%=3; calc();"/>Escena <br/>
-    <canvas id="canvas" width="500" height="500"></canvas>  
+    <input id="escalaXmenos" type="button" value="<" onclick="escalaX-=0.1; document.getElementById('escalaX').innerHTML=escalaX.toFixed(2); calc();"/>
+    <input id="escalaXmas" type="button" value=">" onclick="escalaX+=0.1; document.getElementById('escalaX').innerHTML=escalaX.toFixed(2); calc();"/>Escala X <span id="escalaX" >1.00</span><br/>
+    <input id="escalaYmenos" type="button" value="<" onclick="escalaY-=0.1; document.getElementById('escalaY').innerHTML=escalaY.toFixed(2); calc();"/>
+    <input id="escalaYmas" type="button" value=">" onclick="escalaY+=0.1; document.getElementById('escalaY').innerHTML=escalaY.toFixed(2); calc();"/>Escala Y <span id="escalaY" >1.00</span><br/>
 </body> 
  
 </html> 

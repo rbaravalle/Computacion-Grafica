@@ -49,6 +49,7 @@
     var maxcoord = 256;
     var tipoLinea = 0;
     var tLinea = ['DDA','Bresenham','Nativo'];
+    var esc = ['Casa','Linea','Conversion Scan'];
     var numEsc = 0;
     var escalaX = 1;
     var escalaY = 1;
@@ -98,7 +99,7 @@
         gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
 
-        if(tipoLinea == 2) // nativo
+        if(tipoLinea == 2 && numEsc != 2) // nativo
            gl.drawArrays(gl.LINES, 0, points.length/2);
         else // se dibujan los buffers en pantalla
            gl.drawArrays(gl.POINTS, 0, points.length/2);    
@@ -135,7 +136,9 @@
             if(dx>=0) inc = 1; else inc =-1;
             var m = dy/dx;
             if((dy < 0 && m > 0) || (dy > 0 && m < 0)) m = -m;
-            while(x != x1) {
+            var ult = false;
+            while(!ult) {
+                if(x==x1) ult = 1;
                 if(c2) {
                     if(y0-y1 != 0)
                         p = (y0-Math.round(y))/(y0-y1); // y actual
@@ -155,7 +158,9 @@
             if(dy>=0) inc = 1; else inc = -1;
             var m = dx/dy;
             if((dx < 0 && m > 0) || (dx > 0 && m < 0)) m = -m;
-            while(y != y1) {
+            var ult = false;
+            while(!ult) {
+                if(y==y1) ult = 1;
                 if(c2) {
                     if(y0-y1 != 0)
                         p = (y0-Math.round(y))/(y0-y1); // y actual
@@ -276,7 +281,9 @@
             if(dx>=0) inc = 1; else inc =-1;
             var m = dy/dx;
             if((dy < 0 && m > 0) || (dy > 0 && m < 0)) m = -m;
-            while(x != x1) {
+            var ult = false;
+            while(!ult) {
+                if(x==x1) ult = 1;
                 var i = Math.round(y)-miny;
                 var px = Math.round(x);
 
@@ -308,7 +315,9 @@
             if(dy>=0) inc = 1; else inc = -1;
             var m = dx/dy;
             if((dx < 0 && m > 0) || (dx > 0 && m < 0)) m = -m;
-            while(y != y1) {
+            var ult = false;
+            while(!ult) {
+                if(y==y1) ult = 1;
                 var i = Math.round(y)-miny;
                 var px = Math.round(x);
                 var p;
@@ -338,7 +347,7 @@
         return {"minx": minx,"maxx": maxx, "colsMax": colsMax, "colsMin": colsMin};
     }
 
-    function conversionScan(x0,y0,x1,y1,x2,y2) {
+    function conversionScan(ptos) {
         // dibuja un triangulo entre los puntos especificados
 
         var jscolor1 = document.getElementById('color1');
@@ -357,13 +366,14 @@
               parseFloat(jscolor3.color.rgb[1]),
               parseFloat(jscolor3.color.rgb[2])];
 
-        var maxy = y0;
-        if(y1 > maxy) maxy = y1;
-        if(y2 > maxy) maxy = y2;
+        var cols = [c1,c2,c3];
 
-        var miny = y0;
-        if(y1 < miny) miny = y1;
-        if(y2 < miny) miny = y2;
+        var maxy = ptos[1];
+        var miny = ptos[1];
+        for(var i = 2; i < ptos.length;i+=2) {
+            if(ptos[i+1] > maxy) maxy = ptos[i+1];
+            if(ptos[i+1] < miny) miny = ptos[i+1];
+        }
 
         var minx = [];
         var maxx = [];
@@ -375,17 +385,19 @@
             colsMin[i] = c1;
             colsMax[i] = c1;
         }
-        var t = lineaDDAscan(x0,y0,x1,y1,minx,maxx,miny,c1,c2,colsMin,colsMax);
-        minx = t.minx;
-        maxx = t.maxx;
-        colsMin = t.colsMin;
-        colsMax = t.colsMax;
-        t = lineaDDAscan(x1,y1,x2,y2,minx,maxx,miny,c2,c3,colsMin,colsMax);
-        minx = t.minx;
-        maxx = t.maxx;
-        colsMin = t.colsMin;
-        colsMax = t.colsMax;
-        t = lineaDDAscan(x0,y0,x2,y2,minx,maxx,miny,c1,c3,colsMin,colsMax);
+        var cantC = cols.length;
+        var j;
+        for(var i = 0, j=0; i+2 < ptos.length;i+=2,j++) {
+            var t = lineaDDAscan(ptos[i],ptos[i+1],ptos[i+2],ptos[i+3],
+                                 minx,maxx,miny,cols[j%cantC],cols[(j+1)%cantC],colsMin,colsMax);
+            minx = t.minx;
+            maxx = t.maxx;
+            colsMin = t.colsMin;
+            colsMax = t.colsMax;
+        }
+
+        t = lineaDDAscan(ptos[0],ptos[1],ptos[ptos.length-2],ptos[ptos.length-1],
+                         minx,maxx,miny,cols[0],cols[(j)%cantC],colsMin,colsMax);
         minx = t.minx;
         maxx = t.maxx;
         colsMin = t.colsMin;
@@ -557,7 +569,8 @@
               parseFloat(jscolor1.color.rgb[2])];
 
         if(numEsc == 0) { // Casa
-            escena = new objeto(trasladar(0,-100),casa,'lista');
+            var casas = [new objeto(trasladar(0,-250),casa,'lista'),new objeto(trasladar(0,0),casa,'lista')];
+            var escena = new objeto(id,casas,'lista');
             escena.graf_obj(mprinc,c1);
         }
         if(numEsc == 1) { // linea
@@ -579,8 +592,10 @@
         }
         if(numEsc == 2) { // Gouraud
             var p1 = [-100,-100,1.0];
-            var p2 = [0,100,1.0];
-            var p3 = [100,-100,1.0];
+            var p2 = [-120,20,1.0];
+            var p3 = [0,100,1.0];
+            var p4 = [120,20,1.0];
+            var p5 = [100,-100,1.0];
             var m1 = trasladar(trasladarX*5,trasladarY*5);
             var m2 = escalar(escalaX,escalaY);
             var m3 = rotar(rotarAng);
@@ -593,12 +608,22 @@
             p3 = multVM(p3,m1);
             p3 = multVM(p3,m2);
             p3 = multVM(p3,m3);
-            conversionScan(Math.floor(p1[0]),
+            p4 = multVM(p4,m1);
+            p4 = multVM(p4,m2);
+            p4 = multVM(p4,m3);
+            p5 = multVM(p5,m1);
+            p5 = multVM(p5,m2);
+            p5 = multVM(p5,m3);
+            conversionScan([Math.floor(p1[0]),
                            Math.floor(p1[1]),
                            Math.floor(p2[0]),
                            Math.floor(p2[1]),
                            Math.floor(p3[0]),
-                           Math.floor(p3[1]));
+                           Math.floor(p3[1]),
+                           Math.floor(p4[0]),
+                           Math.floor(p4[1]),
+                           Math.floor(p5[0]),
+                           Math.floor(p5[1])]);
         }
         
  
@@ -611,19 +636,21 @@
  
  
 <body onload="calc();"> 
-    <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 1</div>
+    <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 1 - Computaci&oacute;n Gr&aacute;fica UBA</div>
+    
+    El trabajo pr&aacute;ctico propone la implementaci&oacute;n de algoritmos de discretizaci&oacute;n de l&iacute;neas (DDA y Bresenham), Conversi&oacute;n Scan de Pol&iacute;gonos convexos y grafo de escena.<br/>
+    El tipo de l&iacute;nea no afecta al ejemplo de Conversi&oacute;n Scan.<br/>
     <canvas id="canvas" width="500" height="500" style="float:left"></canvas>  
     <input id="reset" type="button" value="Reset" onclick="reset();"/><br/>
     Colores <input id="color1" class="color" value="C7BBAC" size=5 onchange="calc();">
     <input id="color2" class="color" value="C7BBAC" size=5 onchange="calc();">
     <input id="color3" class="color" value="C7BBAC" size=5 onchange="calc();"><br/>
     <input id="sigtLineamenos" type="button" value="<" onclick="tipoLinea--; if(tipoLinea<0) tipoLinea = tLinea.length-1; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>
-    <input id="sigtLineamas" type="button" value=">" onclick="tipoLinea++; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>
-    Tipo de Linea: <span id="tipoLinea" >DDA</span>
+    <input id="sigtLineamas" type="button" value=">" onclick="tipoLinea++; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>Tipo de Linea: <span id="tipoLinea" >DDA</span>
     <br/>
 
-    <input type="button" value="<" onclick="numEsc--; if(numEsc<0) numEsc = 2; numEsc%=3; calc();"/>
-    <input type="button" value=">" onclick="numEsc++; numEsc%=3; calc();"/>Escena <br/>
+    <input type="button" value="<" onclick="numEsc--; if(numEsc<0) numEsc = esc.length-1; numEsc%=esc.length; document.getElementById('escena').innerHTML=esc[numEsc]; calc();"/>
+    <input type="button" value=">" onclick="numEsc++; numEsc%=esc.length; document.getElementById('escena').innerHTML=esc[numEsc]; calc();"/>Escena: <span id="escena">Casa</span> <br/>
     <input id="escalaXmenos" type="button" value="<" onclick="escalaX-=0.1; document.getElementById('escalaX').innerHTML=escalaX.toFixed(2); calc();"/>
     <input id="escalaXmas" type="button" value=">" onclick="escalaX+=0.1; document.getElementById('escalaX').innerHTML=escalaX.toFixed(2); calc();"/>Escala X <span id="escalaX" >1.00</span><br/>
     <input id="escalaYmenos" type="button" value="<" onclick="escalaY-=0.1; document.getElementById('escalaY').innerHTML=escalaY.toFixed(2); calc();"/>

@@ -1,0 +1,333 @@
+
+<html> 
+ 
+<head> 
+<title>Pr&aacute;ctico 1</title> 
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"> 
+ 
+<script type="text/javascript" src="shaders.js"></script> 
+<script type="text/javascript" src="jscolor/jscolor.js"></script>
+
+<!-- Shaders - ignorar en esta leccion -->
+<script id="shader-fs" type="x-shader/x-fragment"> 
+    #ifdef GL_ES
+    precision highp float;
+    #endif
+
+    varying vec4 vColor;
+ 
+    void main(void) {
+        gl_FragColor = vColor;
+    }
+</script> 
+ 
+<script id="shader-vs" type="x-shader/x-vertex"> 
+    attribute vec2 aVertexPosition;
+    attribute vec3 aVertexColor;
+
+    varying vec4 vColor;
+ 
+    void main(void) {
+        gl_Position = vec4(aVertexPosition,0.0,1.0);
+        vColor = vec4(aVertexColor,1.0);
+    }
+</script> 
+<!--// ignorar en esta leccion -->
+
+
+ 
+<script type="text/javascript"> 
+
+    // variable que sirve de interfaz a opengl
+    var gl;
+
+    // variable que se utilizara como buffer para los vertices del triangulo
+    var pointsBuffer;
+    var points;
+    var colorsBuffer;
+    var colors;
+    var maxcoord = 256;
+    var c1;
+
+    var click;
+    var xPos, yPos;
+    var x, y;         // coords actuales al hacer click con el mouse onButtonDown()
+    var ptosControl = [];
+    var N = 3;
+
+    function findPos(obj) {
+        var curleft = curtop = 0;
+        if (obj.offsetParent) {
+            do {
+                curleft += obj.offsetLeft;
+                curtop += obj.offsetTop;
+            } while (obj = obj.offsetParent);
+            return { x: curleft, y: curtop };
+        }
+    }
+
+    function onButtonDown(e) {
+        click = true;
+        var pos = findPos(this);
+        xPos = e.pageX - pos.x;
+        yPos = e.pageY - pos.y;
+
+        document.getElementById('canvas').style.cursor='pointer';
+
+        var diff = 2;
+        var diffY = 2;
+        x = -1 + diff*xPos/document.getElementById('canvas').width;
+        y = -1 + diffY*(document.getElementById('canvas').height-yPos)/document.getElementById('canvas').height;
+
+        ptosControl[ptosControl.length] = new punto(Math.floor(x*maxcoord),
+                                                    Math.floor(y*maxcoord));
+
+        putpixel(x*maxcoord,y*maxcoord,c1);
+        calc();
+    }
+
+
+    function initGL(canvas) {
+        try {
+            gl = canvas.getContext("experimental-webgl");
+            gl.viewportWidth = canvas.width;
+            gl.viewportHeight = canvas.height;
+            canvas.onmousedown=onButtonDown;
+        } catch (e) {
+            alert("No es posible inicializar WebGL");
+        }
+    }
+
+    function initBuffers() {
+        pointsBuffer = gl.createBuffer();
+        colorsBuffer = gl.createBuffer();
+
+        // se asocian estos vertices con el buffer triangleVertexPositionBuffer
+        gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+    }
+ 
+ 
+    function dibujarEscena() {
+        // color de fondo de la escena
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+        // se dibuja en este viewport (subconjunto del espacio)
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+
+        // se permiten colores en el canvas
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        // se establece que el buffer triangleVertexPositionBuffer es el buffer actual
+        gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
+
+        // por lo tanto se le aplica la siguiente operacion al mismo.
+        // Establece un vinculo entre el buffer y "shaderProgram.vertexPositionAttribute"
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.POINTS, 0, points.length/2);    
+    } 
+
+    // simulacion de buffers
+    function initVariables() {
+        points = [];
+        colors = [];
+    }
+
+    // entre 0 y maxcoord
+    function putpixel(x,y,c) {
+        points.push(x/maxcoord,y/maxcoord);
+        if(c) {
+            colors.push(c[0],c[1],c[2],1.0);
+        }
+        else {
+            colors.push(1.0,1.0,1.0,1.0);
+        }
+    }
+
+    function lineaDDA(x0,y0,x1,y1,c1,c2) {
+        var dx = x1-x0;
+        var dy = y1-y0;
+
+        var x = x0;
+        var y = y0;
+
+        var c = c1;
+        var ri,gi,bi;
+
+        if(Math.abs(dx) > Math.abs(dy)) {
+            if(dx>=0) inc = 1; else inc =-1;
+            var m = dy/dx;
+            if((dy < 0 && m > 0) || (dy > 0 && m < 0)) m = -m;
+            var ult = false;
+            while(!ult) {
+                if(x==x1) ult = 1;
+                if(c2) {
+                    if(y0-y1 != 0)
+                        p = (y0-Math.round(y))/(y0-y1); // y actual
+                    else p = (x0-Math.round(x))/(x0-x1);
+                    ri = c1[0] - (c1[0]-c2[0])*p;
+                    gi = c1[1] - (c1[1]-c2[1])*p;
+                    bi = c1[2] - (c1[2]-c2[2])*p;
+                    c = [ri,gi,bi];
+                }
+
+                putpixel(Math.round(x),Math.round(y),c);
+                x+=inc;
+                y+=m;
+            }
+        }
+        else {
+            if(dy>=0) inc = 1; else inc = -1;
+            var m = dx/dy;
+            if((dx < 0 && m > 0) || (dx > 0 && m < 0)) m = -m;
+            var ult = false;
+            while(!ult) {
+                if(y==y1) ult = 1;
+                if(c2) {
+                    if(y0-y1 != 0)
+                        p = (y0-Math.round(y))/(y0-y1); // y actual
+                    else p = (x0-Math.round(x))/(x0-x1);
+                    ri = c1[0] - (c1[0]-c2[0])*p;
+                    gi = c1[1] - (c1[1]-c2[1])*p;
+                    bi = c1[2] - (c1[2]-c2[2])*p;
+                    c = [ri,gi,bi];
+                }
+                putpixel(Math.round(x),Math.round(y),c);
+                y+=inc;
+                x+=m;
+            }
+        }
+    }
+
+    function prod_matriz(a,b) {
+        var c = [];
+        for(i=0;i<=2;i++) {
+            c[i] = [];
+            for(j=0;j<=2;j++){
+                c[i][j]=0;
+                for(k=0;k<=2;k++)
+                   c[i][j] += a[i][k]*b[k][j];
+            }
+        }
+        return c;
+    }
+
+    function multVM(v,t) {
+        var c = [];
+        for(var j=0;j<=2;j++) {
+            c[j] = 0;
+            for(var k=0;k<=2;k++)
+               c[j] += v[k]*t[j][k];
+        }
+        return c;
+    }
+
+    function rotar(alpha) {
+        return [[Math.cos(alpha),-Math.sin(alpha),0],
+                [Math.sin(alpha),Math.cos(alpha),0],
+                [0,0,1]];
+    }
+
+    function trasladar(x,y) {
+        return [[1,0,x],[0,1,y],[0,0,1]];
+    }
+
+    function escalar(tx,ty) {
+        return [[tx,0,0],[0,ty,0],[0,0,1]];
+    }
+
+    function reset() {;
+        escalaX = 1;
+        escalaY = 1;
+        trasladarX = 0;
+        trasladarY = 0;
+        rotarAng = 0;        
+        ptosControl = [];
+
+        document.getElementById('rotar').innerHTML=rotarAng.toFixed(2);
+        document.getElementById('escalaX').innerHTML=escalaX.toFixed(2);
+        document.getElementById('escalaY').innerHTML=escalaY.toFixed(2);
+        document.getElementById('trasladarX').innerHTML=trasladarX.toFixed(2);
+        document.getElementById('trasladarY').innerHTML=trasladarY.toFixed(2);
+
+        calc();
+    }
+ 
+    function calc() {
+        // se obtiene el objeto canvas del codigo html (como un objeto javascript)
+        var canvas = document.getElementById("canvas");
+
+        // inicializaciones
+        initGL(canvas);
+        initShaders(gl);
+        //initVariables();
+
+        var jscolor1 = document.getElementById('color1');
+        c1 = [parseFloat(jscolor1.color.rgb[0]),
+              parseFloat(jscolor1.color.rgb[1]),
+              parseFloat(jscolor1.color.rgb[2])];
+
+        if(ptosControl.length > 1) bezier();
+
+        initBuffers();
+        dibujarEscena();
+    }
+
+    function punto(x,y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    function deCasteljau(u) {
+
+        for(var i = 1; i <= ptosControl.length; i++) {
+            for(var j = 0; j < ptosControl.length-i; j++) {
+                ptosControl[j].x = (1-u)*ptosControl[j].x + u*ptosControl[j+1].x;
+                ptosControl[j].y = (1-u)*ptosControl[j].y + u*ptosControl[j+1].y;
+            }
+        }
+        return new punto(Math.floor(ptosControl[0].x),Math.floor(ptosControl[0].y));
+
+    }
+
+    function bezier() {
+        var paso = 0.1;
+        var p = new punto(Math.floor(ptosControl[0].x),Math.floor(ptosControl[0].y));
+        var u;
+        for(var i = 1; i <= ptosControl.length; i++) {
+            u = i*paso;
+            p1 = deCasteljau(u);
+            lineaDDA(p.x,p.y,p1.x,p1.y,[1.0,1.0,1.0]);
+            p = p1;
+        }
+        
+    }
+
+    function alertar(a) {
+        var s = "";
+        for(var i = 0; i < a.length; i++)
+            s += a[i] + "  ";
+        alert(s);
+    }
+ 
+ </script> 
+</head> 
+ 
+ 
+<body onload="initVariables(); calc();"> 
+    <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 2 - Computaci&oacute;n Gr&aacute;fica - UBA</div>
+    
+    <canvas id="canvas" width="500" height="500" style="float:left"></canvas>  
+    <input id="reset" type="button" value="Reset" onclick="reset();"/><br/>
+    Colores <input id="color1" class="color" value="C7BBAC" size=5 onchange="calc();">
+    
+    
+</body> 
+ 
+</html> 

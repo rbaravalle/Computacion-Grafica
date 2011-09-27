@@ -52,8 +52,8 @@
     var click;
     var xPos, yPos;
     var x, y;         // coords actuales al hacer click con el mouse onButtonDown()
-    var ptosControl = [];
-    var N = 3;
+    var ptosControl = [], clicks = [];
+    var paso = 0.1;
 
     function findPos(obj) {
         var curleft = curtop = 0;
@@ -72,18 +72,17 @@
         xPos = e.pageX - pos.x;
         yPos = e.pageY - pos.y;
 
-        document.getElementById('canvas').style.cursor='pointer';
-
         var diff = 2;
         var diffY = 2;
         x = -1 + diff*xPos/document.getElementById('canvas').width;
         y = -1 + diffY*(document.getElementById('canvas').height-yPos)/document.getElementById('canvas').height;
 
-        ptosControl[ptosControl.length] = new punto(Math.floor(x*maxcoord),
-                                                    Math.floor(y*maxcoord));
+        ptosControl.push(new punto(Math.floor(x*maxcoord),
+                                   Math.floor(y*maxcoord)));
 
-        putpixel(x*maxcoord,y*maxcoord,c1);
-        calc();
+        putpixel(ptosControl[ptosControl.length-1].x,ptosControl[ptosControl.length-1].y,c1);
+        clicks.push(Math.floor(x*maxcoord),Math.floor(y*maxcoord));
+        calc(ptosControl);
     }
 
 
@@ -242,24 +241,27 @@
         return [[tx,0,0],[0,ty,0],[0,0,1]];
     }
 
-    function reset() {;
-        escalaX = 1;
-        escalaY = 1;
-        trasladarX = 0;
-        trasladarY = 0;
-        rotarAng = 0;        
+    function reset() {    
         ptosControl = [];
+        initVariables();
 
-        document.getElementById('rotar').innerHTML=rotarAng.toFixed(2);
-        document.getElementById('escalaX').innerHTML=escalaX.toFixed(2);
-        document.getElementById('escalaY').innerHTML=escalaY.toFixed(2);
-        document.getElementById('trasladarX').innerHTML=trasladarX.toFixed(2);
-        document.getElementById('trasladarY').innerHTML=trasladarY.toFixed(2);
+        calc([]);
+    }
 
-        calc();
+    function redibujar(g) {
+        reset();
+        var t = [];
+        ptosControl = [];
+        calc(t);
+        for(var i = 0; i < clicks.length; i+=2) {
+            putpixel(clicks[i],clicks[i+1],c1);
+            ptosControl.push(new punto(clicks[i],
+                                       clicks[i+1]));
+            calc(ptosControl);
+        }
     }
  
-    function calc() {
+    function calc(g) {
         // se obtiene el objeto canvas del codigo html (como un objeto javascript)
         var canvas = document.getElementById("canvas");
 
@@ -273,7 +275,7 @@
               parseFloat(jscolor1.color.rgb[1]),
               parseFloat(jscolor1.color.rgb[2])];
 
-        if(ptosControl.length > 1) bezier();
+        if(g.length > 1) bezier(g);
 
         initBuffers();
         dibujarEscena();
@@ -284,25 +286,28 @@
         this.y = y;
     }
 
-    function deCasteljau(u) {
-
-        for(var i = 1; i <= ptosControl.length; i++) {
-            for(var j = 0; j < ptosControl.length-i; j++) {
-                ptosControl[j].x = (1-u)*ptosControl[j].x + u*ptosControl[j+1].x;
-                ptosControl[j].y = (1-u)*ptosControl[j].y + u*ptosControl[j+1].y;
+    function deCasteljau(u,g) {
+        for(var i = 1; i <= g.length; i++) {
+            for(var j = 0; j < g.length-i; j++) {
+                g[j].x = (1-u)*g[j].x + u*g[j+1].x;
+                g[j].y = (1-u)*g[j].y + u*g[j+1].y;
             }
         }
-        return new punto(Math.floor(ptosControl[0].x),Math.floor(ptosControl[0].y));
+        return [new punto(Math.floor(g[0].x),Math.floor(g[0].y)),
+                g];
 
     }
 
-    function bezier() {
-        var paso = 0.1;
-        var p = new punto(Math.floor(ptosControl[0].x),Math.floor(ptosControl[0].y));
+    function bezier(g) {
+
+
+        var p = new punto(Math.floor(g[0].x),Math.floor(g[0].y));
         var u;
-        for(var i = 1; i <= ptosControl.length; i++) {
+        for(var i = 1; i <= g.length; i++) {
             u = i*paso;
-            p1 = deCasteljau(u);
+            res = deCasteljau(u,g);
+            var p1 = res[0];
+            g = res[1];
             lineaDDA(p.x,p.y,p1.x,p1.y,[1.0,1.0,1.0]);
             p = p1;
         }
@@ -320,12 +325,14 @@
 </head> 
  
  
-<body onload="initVariables(); calc();"> 
+<body onload="initVariables(); calc([]);"> 
     <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 2 - Computaci&oacute;n Gr&aacute;fica - UBA</div>
     
     <canvas id="canvas" width="500" height="500" style="float:left"></canvas>  
     <input id="reset" type="button" value="Reset" onclick="reset();"/><br/>
-    Colores <input id="color1" class="color" value="C7BBAC" size=5 onchange="calc();">
+    Colores <input id="color1" class="color" value="C7BBAC" size=5 onchange="calc(ptosControl);">
+    <input id="menosPaso" type="button" value="<" onclick="paso-=0.1; document.getElementById('paso').innerHTML=paso.toFixed(2); redibujar(ptosControl);"/>
+    <input id="masPaso" type="button" value=">" onclick="paso+=0.1; document.getElementById('paso').innerHTML=paso.toFixed(2); redibujar(ptosControl);"/>Paso <span id="paso" >0.2</span><br/>
     
     
 </body> 

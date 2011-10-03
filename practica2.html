@@ -52,8 +52,8 @@
     var click;
     var xPos, yPos;
     var x, y;         // coords actuales al hacer click con el mouse onButtonDown()
-    var ptosControl = [], clicks = [];
-    var paso = 0.1;
+    var ptosControl = [];
+    var paso = 5;
 
     function findPos(obj) {
         var curleft = curtop = 0;
@@ -77,11 +77,10 @@
         x = -1 + diff*xPos/document.getElementById('canvas').width;
         y = -1 + diffY*(document.getElementById('canvas').height-yPos)/document.getElementById('canvas').height;
 
-        ptosControl.push(new punto(Math.floor(x*maxcoord),
-                                   Math.floor(y*maxcoord)));
+        ptosControl.push([Math.floor(x*maxcoord),Math.floor(y*maxcoord)]);
 
-        putpixel(ptosControl[ptosControl.length-1].x,ptosControl[ptosControl.length-1].y,c1);
-        clicks.push(Math.floor(x*maxcoord),Math.floor(y*maxcoord));
+        putpixel(ptosControl[ptosControl.length-1][0],ptosControl[ptosControl.length-1][1],c1);
+        initVariables();
         calc(ptosControl);
     }
 
@@ -110,6 +109,7 @@
  
  
     function dibujarEscena() {
+        initBuffers();
         // color de fondo de la escena
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
@@ -243,41 +243,33 @@
 
     function reset() {    
         ptosControl = [];
+        redibujar();
+    }
+
+    function redibujar() {
         initVariables();
-
-        calc([]);
+        calc();
     }
 
-    function redibujar(g) {
-        reset();
-        var t = [];
-        ptosControl = [];
-        calc(t);
-        for(var i = 0; i < clicks.length; i+=2) {
-            putpixel(clicks[i],clicks[i+1],c1);
-            ptosControl.push(new punto(clicks[i],
-                                       clicks[i+1]));
-            calc(ptosControl);
-        }
-    }
- 
-    function calc(g) {
+    function init() {
         // se obtiene el objeto canvas del codigo html (como un objeto javascript)
         var canvas = document.getElementById("canvas");
 
         // inicializaciones
         initGL(canvas);
         initShaders(gl);
-        //initVariables();
+        initVariables();
+        calc([]);
+    }
+ 
+    function calc() {
 
         var jscolor1 = document.getElementById('color1');
         c1 = [parseFloat(jscolor1.color.rgb[0]),
               parseFloat(jscolor1.color.rgb[1]),
               parseFloat(jscolor1.color.rgb[2])];
 
-        if(g.length > 1) bezier(g);
-
-        initBuffers();
+        bezier();
         dibujarEscena();
     }
 
@@ -286,32 +278,54 @@
         this.y = y;
     }
 
-    function deCasteljau(u,g) {
-        for(var i = 1; i <= g.length; i++) {
-            for(var j = 0; j < g.length-i; j++) {
-                g[j].x = (1-u)*g[j].x + u*g[j+1].x;
-                g[j].y = (1-u)*g[j].y + u*g[j+1].y;
+    function deCasteljau(u) {
+        var h = [];
+        var g = ptosControl;
+        for(var i = 0; i < g.length; i ++) {
+            h[i] = [];
+            h[i][0] = g[i][0];
+            h[i][1] = g[i][1];
+        }
+        for(var i = 1; i <= h.length-1; i++) {
+            for(var j = 0; j < h.length-i; j++) {
+                h[j][0] = (1-u)*h[j][0] + u*h[j+1][0];
+                h[j][1] = (1-u)*h[j][1] + u*h[j+1][1];
             }
         }
-        return [new punto(Math.floor(g[0].x),Math.floor(g[0].y)),
-                g];
+        return [Math.floor(h[0][0]),Math.floor(h[0][1])];
 
     }
 
-    function bezier(g) {
-
-
-        var p = new punto(Math.floor(g[0].x),Math.floor(g[0].y));
-        var u;
-        for(var i = 1; i <= g.length; i++) {
-            u = i*paso;
-            res = deCasteljau(u,g);
-            var p1 = res[0];
-            g = res[1];
-            lineaDDA(p.x,p.y,p1.x,p1.y,[1.0,1.0,1.0]);
-            p = p1;
+    function bezier() {
+        if(ptosControl.length < 1) return;
+        var x = Math.floor(ptosControl[0][0]);
+        var y = Math.floor(ptosControl[0][1]);
+        dibNodo(x,y,c1);
+        for(var i = 1; i <= paso; i++) {
+            u = i/paso;
+            var p1 = deCasteljau(u);
+            lineaDDA(x,y,p1[0],p1[1],c1);
+            dibNodo(p1[0],p1[1],c1);
+            x = p1[0];
+            y = p1[1];
         }
-        
+        for(var i = 0; i < ptosControl.length-1; i++) {
+            lineaDDA(ptosControl[i][0],ptosControl[i][1],
+                     ptosControl[i+1][0],ptosControl[i+1][1],[0.5,0.5,0.5]);
+            dibNodo(ptosControl[i][0],ptosControl[i][1]);
+        }
+        dibNodo(ptosControl[ptosControl.length-1][0],ptosControl[ptosControl.length-1][1],[0.5,0.5,0.5]);
+    }
+
+    function dibNodo(x,y,c) { // resalta un nodo centrado en (x,y)
+        putpixel(x,y+1,c);
+        putpixel(x,y-1,c);
+        putpixel(x+1,y-1,c);
+        putpixel(x+1,y,c);
+        putpixel(x+1,y+1,c);
+        putpixel(x-1,y-1,c);
+        putpixel(x-1,y,c);
+        putpixel(x-1,y+1,c);
     }
 
     function alertar(a) {
@@ -325,14 +339,14 @@
 </head> 
  
  
-<body onload="initVariables(); calc([]);"> 
+<body onload="init();"> 
     <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 2 - Computaci&oacute;n Gr&aacute;fica - UBA</div>
     
     <canvas id="canvas" width="500" height="500" style="float:left"></canvas>  
     <input id="reset" type="button" value="Reset" onclick="reset();"/><br/>
-    Colores <input id="color1" class="color" value="C7BBAC" size=5 onchange="calc(ptosControl);">
-    <input id="menosPaso" type="button" value="<" onclick="paso-=0.1; document.getElementById('paso').innerHTML=paso.toFixed(2); redibujar(ptosControl);"/>
-    <input id="masPaso" type="button" value=">" onclick="paso+=0.1; document.getElementById('paso').innerHTML=paso.toFixed(2); redibujar(ptosControl);"/>Paso <span id="paso" >0.2</span><br/>
+    Colores <input id="color1" class="color" value="C7BBAC" size=5 onchange="calc(ptosControl);"><br/>
+    <input id="menosPaso" type="button" value="<" onclick="if(paso > 1) { paso--; document.getElementById('paso').innerHTML=paso.toFixed(0); redibujar(); } "/>
+    <input id="masPaso" type="button" value=">" onclick="paso++; document.getElementById('paso').innerHTML=paso.toFixed(0); redibujar();"/>Paso <span id="paso" >5</span><br/>
     
     
 </body> 

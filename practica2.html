@@ -47,7 +47,7 @@
     var colorsBuffer;
     var colors;
     var maxcoord = 256;
-    var c1;
+    var c1,c2,c3;
 
     var click;
     var xPos, yPos;
@@ -56,6 +56,17 @@
     var paso = 5;
     var tBase = ['de Casteljau','Bernstein'];
     var tipoBase = 0;
+    var nomfigura = ["Rectangulo","Firma","Curva","Curva repitiendo puntos","Estrella","Mano","Auto"];
+    var figura = 0;
+    var reset = false;
+    var figuras = [[[95, -52], [100, -213], [-94, -213], [-104, 186], [76, 197], [92, -23]], // rectangulo
+[[-230, -180], [-223, 154], [-127, 150], [-143, -20], [-226, -27], [-196, 4], [-165, -116], [-98, -61], [-97, -110], [-60, -115], [-40, 2], [-111, 1], [-118, -72], [-35, -73], [-20, 18], [5, 1], [-34, -37], [-38, -107], [-5, -109], [27, 47], [26, 148], [16, -90], [36, -85], [57, 19], [63, 20], [66, -12], [61, -76], [80, -64], [101, 32], [95, -39], [100, -49], [116, -33], [131, 22], [122, -83], [130, -82], [154, -54], [161, 21], [131, 25], [152, -58], [137, -123], [120, -143], [98, -168], [94, -79], [151, -70], [183, 16], [181, 30], [180, 1], [181, -39], [217, 56], [202, 92], [190, 44], [229, 133], [227, 183], [250, 114], [250, -2], [220, -65], [204, -58], [250, -87], [188, -107], [39, -120], [-195, -239], [241, -116]], // firma
+[[-241, -55], [-180, 66], [-169, -101], [-91, 83], [-37, -115], [38, 118], [61, -143], [122, 112], [134, -101], [196, 97], [217, -116]], // curva
+[[-238, -154], [-238, -154], [-211, -26], [-211, -26], [-211, -26], [-182, -206], [-182, -206], [-182, -206], [-149, -14], [-149, -14], [-149, -14], [-94, -218], [-94, -218], [-94, -218], [-69, -3], [-69, -3], [-69, -3], [-8, -205], [-8, -205], [-8, -205], [17, -26], [17, -26], [17, -26], [74, -135], [74, -135], [74, -135], [142, -8], [142, -8], [142, -8], [142, -167], [142, -167], [142, -167], [176, -18], [176, -18], [217, -114], [217, -114]], // curva repitiendo puntos
+[[-11, -24], [-85, -141], [-41, 31], [-162, 148], [7, 105], [26, 233], [72, 89], [214, 199], [92, 32], [153, -135], [-6, -20]], // estrella
+[[-21, -220], [-45, -107], [-87, -2], [-165, 84], [-149, 114], [-59, 22], [-41, 28], [-91, 178], [-53, 187], [-15, 34], [3, 35], [-8, 234], [43, 230], [46, 43], [70, 30], [171, 192], [188, 150], [90, 0], [99, -50], [166, 6], [175, -44], [81, -74], [46, -107], [29, -227]], // mano
+[[-107, -128], [-100, -162], [-66, -159], [-57, -123], [12, -124], [20, -163], [56, -165], [60, -127], [142, -124], [142, -79], [148, -29], [41, 1], [35, 82], [24, 114], [-82, 117], [-140, 105], [-155, 39], [-156, -6], [-198, -16], [-200, -41], [-201, -114], [-195, -125], [-114, -123], [-109, -132], [-102, -76], [-68, -75], [-55, -128], [-32, -128], [1, -127], [15, -61], [48, -61], [59, -131], [74, -130]] // auto
+]; // diferentes figuras representadas
 
     function findPos(obj) {
         var curleft = curtop = 0;
@@ -243,14 +254,21 @@
         return [[tx,0,0],[0,ty,0],[0,0,1]];
     }
 
-    function reset() {
+    function resetf() {
         tipoBase = 0;
+        figura = 0;
+        reset = true;
+        
         document.getElementById("tipoBase").innerHTML = tBase[tipoBase];
-        ptosControl = [];
-        redibujar();
+        document.getElementById('nomfigura').innerHTML= "---";
+        redibujar(true);
     }
 
-    function redibujar() {
+    function redibujar(cambiarReset) {
+        if(cambiarReset) {
+            if(reset) { ptosControl = []; reset = false; }
+            else ptosControl = figuras[figura];
+        }
         initVariables();
         calc();
     }
@@ -262,8 +280,7 @@
         // inicializaciones
         initGL(canvas);
         initShaders(gl);
-        initVariables();
-        calc([]);
+        redibujar();
     }
  
     function calc() {
@@ -273,7 +290,18 @@
               parseFloat(jscolor1.color.rgb[1]),
               parseFloat(jscolor1.color.rgb[2])];
 
+        var jscolor2 = document.getElementById('color2');
+        c2 = [parseFloat(jscolor2.color.rgb[0]),
+              parseFloat(jscolor2.color.rgb[1]),
+              parseFloat(jscolor2.color.rgb[2])];
+
+        var jscolor3 = document.getElementById('color3');
+        c3 = [parseFloat(jscolor3.color.rgb[0]),
+              parseFloat(jscolor3.color.rgb[1]),
+              parseFloat(jscolor3.color.rgb[2])];
+
         bezier();
+        bspline();
         dibujarEscena();
     }
 
@@ -349,8 +377,8 @@
 
             if(tipoBase == 1) {
                 p2 = bernstein(u);
-                lineaDDA(x2,y2,p2[0],p2[1],[0.3,0.3,0.8]);
-                dibNodo(p2[0],p2[1],[0.3,0.3,0.8]);
+                lineaDDA(x2,y2,p2[0],p2[1],c1);
+                dibNodo(p2[0],p2[1],c1);
 
                 x2 = p2[0];
                 y2 = p2[1];
@@ -358,10 +386,10 @@
         }
         for(var i = 0; i < ptosControl.length-1; i++) {
             lineaDDA(ptosControl[i][0],ptosControl[i][1],
-                     ptosControl[i+1][0],ptosControl[i+1][1],[0.5,0.5,0.5]);
-            dibNodo(ptosControl[i][0],ptosControl[i][1]);
+                     ptosControl[i+1][0],ptosControl[i+1][1],c3);
+            dibNodo(ptosControl[i][0],ptosControl[i][1],c3);
         }
-        dibNodo(ptosControl[ptosControl.length-1][0],ptosControl[ptosControl.length-1][1],[0.5,0.5,0.5]);
+        dibNodo(ptosControl[ptosControl.length-1][0],ptosControl[ptosControl.length-1][1],c3);
     }
 
     function dibNodo(x,y,c) { // resalta un nodo centrado en (x,y)
@@ -381,6 +409,58 @@
             s += a[i] + "  ";
         alert(s);
     }
+
+    // b-spline
+    function base(u,i)  {
+        if(i == 1) return u*u*u/6;
+        if(i == 0) return (1+u*3*(1+u*(1-u)))/6;
+        if(i == -1) return (4+u*u*3*(-2+u))/6;
+        if(i == -2) return (1+u*(-3+u*(3-u)))/6;
+    }
+
+    function bspline() {
+        if(ptosControl.length < 1) return;
+        var p = [];
+        var v;
+        var index;
+        var x,y;
+        var u = 0;
+
+        var cantpts = ptosControl.length-1
+        for(var j = 1; j <= cantpts ; j++) {
+            u = 0;
+            p[0] = 0; p[1] = 0;
+            for(i = -2; i <= 1; i++) {
+                v = base(u,i);
+                index = i+j;
+                if(index  < 0) index = 0;
+                if(index > cantpts) index = cantpts;
+                p[0]+= ptosControl[index][0]*v;
+                p[1]+= ptosControl[index][1]*v;
+            }
+            //dibNodo(Math.floor(p[0]),Math.floor(p[1]),c2);
+            x = p[0]; y = p[1];
+            for(var k = 1; k <= paso; k++) {
+                p[0] = 0;
+                p[1] = 0;
+                u = k/paso;
+                for(i = -2; i <= 1; i++) {
+                    v = base(u,i);
+                    index = i+j;
+                    if(index < 0) index = 0;
+                    if(index > cantpts) index = cantpts;
+
+                    p[0]+= ptosControl[index][0]*v;
+                    p[1]+= ptosControl[index][1]*v;
+                }
+                dibNodo(p[0],p[1],c2);
+                lineaDDA(Math.floor(x),Math.floor(y),Math.floor(p[0]),Math.floor(p[1]),c2);
+                x=p[0];
+                y=p[1];
+            }
+        }
+
+    }
  
  </script> 
 </head> 
@@ -388,14 +468,19 @@
  
 <body onload="init();"> 
     <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 2 - Computaci&oacute;n Gr&aacute;fica - UBA</div>
+    <span>Haga click en el rect&aacute;ngulo negro para agregar nodos al grafo de control.</span><br/>
     
     <canvas id="canvas" width="500" height="500" style="float:left"></canvas>  
-    <input id="reset" type="button" value="Reset" onclick="reset();"/><br/>
-    Colores <input id="color1" class="color" value="78CAF2" size=5 onchange="redibujar();"><br/>
-    <input id="menosPaso" type="button" value="<" onclick="if(paso > 1) { paso--; document.getElementById('paso').innerHTML=paso.toFixed(0); redibujar(); } "/>
-    <input id="masPaso" type="button" value=">" onclick="paso++; document.getElementById('paso').innerHTML=paso.toFixed(0); redibujar();"/>Paso <span id="paso" >5</span><br/>
+    <input id="reset" type="button" value="Reset" onclick="resetf();"/><br/>
+    <input id="color1" class="color" value="FF0000" size=5 onchange="redibujar(false);">B&eacute;zier<br/>
+    <input id="color2" class="color" value="00FF00" size=5 onchange="redibujar(false);">B-Spline<br/>
+    <input id="color3" class="color" value="FFFFFF" size=5 onchange="redibujar(false);">Grafo de Control<br/>
+    <input id="menosPaso" type="button" value="<" onclick="if(paso > 1) { paso--; document.getElementById('paso').innerHTML=paso.toFixed(0); redibujar(false); } "/>
+    <input id="masPaso" type="button" value=">" onclick="paso++; document.getElementById('paso').innerHTML=paso.toFixed(0); redibujar(false);"/>Paso <span id="paso" >5</span><br/>
 <input id="baseMenos" type="button" value="<" onclick="tipoBase--; if(tipoBase<0) tipoBase = tBase.length-1; tipoBase%=tBase.length; document.getElementById('tipoBase').innerHTML=tBase[tipoBase]; calc();"/>
-    <input id="baseMas" type="button" value=">" onclick="tipoBase++; tipoBase%=tBase.length; document.getElementById('tipoBase').innerHTML=tBase[tipoBase]; calc();"/>Base: <span id="tipoBase" >de Casteljau</span>
+    <input id="baseMas" type="button" value=">" onclick="tipoBase++; tipoBase%=tBase.length; document.getElementById('tipoBase').innerHTML=tBase[tipoBase]; calc();"/>Base B&eacute;zier: <span id="tipoBase" >de Casteljau</span><br/>
+<input id="figuraMenos" type="button" value="<" onclick="reset = false; figura--; if(figura<0) figura = nomfigura.length-1; figura%=nomfigura.length; document.getElementById('nomfigura').innerHTML=nomfigura[figura]; redibujar(true);"/>
+    <input id="figuraMas" type="button" value=">" onclick="reset = false; figura++; figura%=nomfigura.length; document.getElementById('nomfigura').innerHTML=nomfigura[figura]; redibujar(true);"/>Figura: <span id="nomfigura" >---</span>
     <br/>
     
 </body> 

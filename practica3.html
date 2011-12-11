@@ -62,6 +62,8 @@
     var trasladarX = 0;
     var trasladarY = 0;
     var rotarAng = 0;
+    var ang1 = 100;
+    var ang2 = 100;
     var pMatrix = mat4.create();
     var mvMatrix = mat4.create();
 
@@ -100,8 +102,8 @@
 
         mat4.translate(mvMatrix, [-0.0, -0.0, -4.5 , 0]); //-1.2162
 
-        mat4.rotate(mvMatrix, degToRad(20), [1, 0, -1]);
-        mat4.rotate(mvMatrix, degToRad(80), [0, 1, 0]);
+        mat4.rotate(mvMatrix, degToRad(ang1), [1, 0, -1]);
+        mat4.rotate(mvMatrix, degToRad(ang2), [0, 1, 0]);
 
         // se dibuja en este viewport (subconjunto del espacio)
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -670,6 +672,20 @@
 
         calc();
     }
+
+    function handleKeyDown(event) {
+//        currentlyPressedKeys[event.keyCode] = true;
+
+        if (String.fromCharCode(event.keyCode) == "A") {
+            ang1+=10;
+        }
+        if (String.fromCharCode(event.keyCode) == "S") {
+            ang2+=10;
+        }
+
+        calc();
+     }
+
  
     function calc() {
         // se obtiene el objeto canvas del codigo html (como un objeto javascript)
@@ -768,6 +784,7 @@
                            Math.floor(p5[1])]);
         }
         
+        //document.onkeyup = handleKeyUp;
  
         initBuffers();
         dibujarEscena();
@@ -777,7 +794,7 @@
 </head> 
  
  
-<body onload="calc();"> 
+<body onload="        document.onkeydown = handleKeyDown; calc();"> 
     <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 1 - Computaci&oacute;n Gr&aacute;fica UBA</div>
     
     El trabajo pr&aacute;ctico propone la implementaci&oacute;n de algoritmos de discretizaci&oacute;n de l&iacute;neas (DDA y Bresenham), Conversi&oacute;n Scan de Pol&iacute;gonos convexos y grafo de escena.<br/>

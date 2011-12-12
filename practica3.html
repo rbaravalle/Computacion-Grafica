@@ -61,11 +61,14 @@
     var escalaY = 1;
     var trasladarX = 0;
     var trasladarY = 0;
+    var trasladarZ = 0;
     var rotarAng = 0;
-    var ang1 = 100;
-    var ang2 = 100;
+    var ang1 = 0;
+    var ang2 = 0;
     var pMatrix = mat4.create();
     var mvMatrix = mat4.create();
+    var currentlyPressedKeys = {};
+
 
     function initGL(canvas) {
         try {
@@ -100,10 +103,10 @@
 
         mat4.identity(mvMatrix);
 
-        mat4.translate(mvMatrix, [-0.0, -0.0, -4.5 , 0]); //-1.2162
+        mat4.rotate(mvMatrix, degToRad(ang1), [0, 1, 0]);
+        mat4.rotate(mvMatrix, degToRad(ang2), [1, 0, 0]);
 
-        mat4.rotate(mvMatrix, degToRad(ang1), [1, 0, -1]);
-        mat4.rotate(mvMatrix, degToRad(ang2), [0, 1, 0]);
+        mat4.translate(mvMatrix, [trasladarX, trasladarY, trasladarZ]);
 
         // se dibuja en este viewport (subconjunto del espacio)
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -125,7 +128,7 @@
         gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
 
         //if(tipoLinea == 2 && numEsc != 2) // nativo
-           gl.drawArrays(gl.LINES, 0, points.length/3);
+        gl.drawArrays(gl.LINES, 0, points.length/3);
         /*else // se dibujan los buffers en pantalla
            gl.drawArrays(gl.POINTS, 0, points.length/2);    */
     } 
@@ -439,21 +442,9 @@
     }
 
     function linea(p1,p2,c) {
-        //if(tipoLinea == 2) { // nativo
-            putpixel(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p1.z),c);
-            putpixel(Math.floor(p2.x),Math.floor(p2.y),Math.floor(p2.z),c);
-        //}
-        /*if(tipoLinea == 1)
-            return lineaBresenham(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p2.x),Math.floor(p2.y),c);
-        if(tipoLinea == 0)
-            return lineaDDA(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p2.x),Math.floor(p2.y),c);*/
+        putpixel(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p1.z),c);
+        putpixel(Math.floor(p2.x),Math.floor(p2.y),Math.floor(p2.z),c);
     }
-
-    /*function punto(x,y,c) {
-        this.x = x;
-        this.y = y;
-        this.c = c;
-    }*/
 
     function punto(x,y,z,c) {
         this.x = x;
@@ -490,19 +481,6 @@
         this.o = o;
     }
 
-    function prod_matriz(a,b) {
-        var c = [];
-        for(i=0;i<=2;i++) {
-            c[i] = [];
-            for(j=0;j<=2;j++){
-                c[i][j]=0;
-                for(k=0;k<=2;k++)
-                   c[i][j] += a[i][k]*b[k][j];
-            }
-        }
-        return c;
-    }
-
     function prod_matriz3D(a,b) {
         var c = [];
         for(i=0;i<=3;i++) {
@@ -524,42 +502,6 @@
                c[j] += v[k]*t[j][k];
         }
         return c;
-    }
-
-    function multVM(v,t) {
-        var c = [];
-        for(var j=0;j<=2;j++) {
-            c[j] = 0;
-            for(var k=0;k<=2;k++)
-               c[j] += v[k]*t[j][k];
-        }
-        return c;
-    }
-
-    cuad.prototype.transformar = function(t) {
-        var v = multVM([this.p1.x,this.p1.y,1.0],t);
-        var res = [];
-        res.push(v[0],v[1])
-        v = multVM([this.p2.x,this.p2.y,1.0],t);
-        res.push(v[0],v[1])
-        v = multVM([this.p3.x,this.p3.y,1.0],t);
-        res.push(v[0],v[1])
-        v = multVM([this.p4.x,this.p4.y,1.0],t);
-        res.push(v[0],v[1])
-        return res;
-    }
-
-    cuad.prototype.graf_cuad = function(o,at,c) {
-        var t1 = prod_matriz(o.t,at);
-        var arr = this.transformar(t1);
-        var p1 = {"x":arr[0],"y":arr[1]};
-        var p2 = {"x":arr[2],"y":arr[3]};
-        var p3 = {"x":arr[4],"y":arr[5]};
-        var p4 = {"x":arr[6],"y":arr[7]};
-        linea(p1,p2,c);
-        linea(p2,p3,c);
-        linea(p3,p4,c);
-        linea(p4,p1,c);
     }
 
     cubo.prototype.transformar3D = function(t) {
@@ -587,11 +529,8 @@
         var t1 = prod_matriz3D(o.t,at);
         var arr = [];
 
-        //for(var i = 0; i < 8; i++) {
         arr = this.transformar3D(t1);
-        //}
 
-        //var arr = this.transformar(t1);
         var p1 = {"x":arr[0],"y":arr[1],"z":arr[2]};
         var p2 = {"x":arr[3],"y":arr[4],"z":arr[5]};
         var p3 = {"x":arr[6],"y":arr[7],"z":arr[8]};
@@ -617,18 +556,6 @@
 
     }
 
-    /*objeto.prototype.graf_obj = function(t,c) {
-        if(this.tipo == 'cuad') {
-            this.e.graf_cuad(this,t,c);
-        }
-        else {
-            var t1 = prod_matriz(t,this.t);
-            for(var i = 0; i < this.e.length; i++) {
-                this.e[i].graf_obj(t1,c);
-            }
-        }
-    }*/
-
     objeto.prototype.graf_obj = function(t,c) {
         if(this.tipo == 'cubo') {
             this.e.graf_cubo(this,t,c);
@@ -643,18 +570,30 @@
         }
     }
 
-    function rotar(alpha) {
+    function rotarX(alpha) {
         return [[Math.cos(alpha),-Math.sin(alpha),0],
                 [Math.sin(alpha),Math.cos(alpha),0],
                 [0,0,1]];
     }
 
-    function trasladar(x,y) {
-        return [[1,0,x],[0,1,y],[0,0,1]];
+    function rotarY(alpha) {
+        return [[Math.cos(alpha),-Math.sin(alpha),0],
+                [Math.sin(alpha),Math.cos(alpha),0],
+                [0,0,1]];
     }
 
-    function escalar(tx,ty) {
-        return [[tx,0,0],[0,ty,0],[0,0,1]];
+    function rotarZ(alpha) {
+        return [[Math.cos(alpha),-Math.sin(alpha),0],
+                [Math.sin(alpha),Math.cos(alpha),0],
+                [0,0,1]];
+    }
+
+    function trasladar3D(x,y,z) {
+        return [[1,0,0,x],[0,1,0,y],[0,0,1,z],[0,0,0,1]];
+    }
+
+    function escalar3D(tx,ty) {
+        return [[tx,0,0,0],[0,ty,0,0],[0,0,tz,0],[0,0,0,1]];
     }
 
     function reset() {;
@@ -674,22 +613,49 @@
     }
 
     function handleKeyDown(event) {
-//        currentlyPressedKeys[event.keyCode] = true;
+        currentlyPressedKeys[event.keyCode] = true;
 
         if (String.fromCharCode(event.keyCode) == "A") {
-            ang1-=10;
+            ang1+=5;
         }
         if (String.fromCharCode(event.keyCode) == "D") {
-            ang1+=10;
+            ang1-=5;
         }
         if (String.fromCharCode(event.keyCode) == "S") {
-            ang2-=10;
+            ang2-=5;
         }
         if (String.fromCharCode(event.keyCode) == "W") {
-            ang2+=10;
+            ang2+=5;
+        }
+
+        if (currentlyPressedKeys[38]) {
+          // Up cursor key
+          trasladarZ += 0.1;
+        }
+        if (currentlyPressedKeys[40]) {
+          // Down cursor key
+          trasladarZ -= 0.1;
+        }
+
+        if (currentlyPressedKeys[37]) { // left
+          trasladarX -= 0.1;
+        }
+        if (currentlyPressedKeys[39]) { // right
+          trasladarX += 0.1;
+        }
+
+        if (currentlyPressedKeys[33]) { // Page Up
+          trasladarY+=0.1;
+        } else if (currentlyPressedKeys[34]) {
+          trasladarY-=0.1;
         }
 
         calc();
+     }
+
+     function handleKeyUp(event) {
+       currentlyPressedKeys[event.keyCode] = false;
+       calc();
      }
 
  
@@ -703,22 +669,6 @@
         initVariables();
 
         var id = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];
-        var mprinc = prod_matriz(rotar(rotarAng),prod_matriz(escalar(escalaX,escalaY),trasladar(trasladarX*20,trasladarY*20)));
-
-        var c1 = new cuad(new punto(-40,0),new punto(-40,100),new punto(40,100), new punto(40,0));
-        var c2 = new cuad(new punto(-30,90),new punto(-30,60),new punto(30,60), new punto(30,90));
-        var c3 = new cuad(new punto(-30,10),new punto(-30,40),new punto(30,40), new punto(30,10));
-
-        var ch1 = new cuad(new punto(-100,170),new punto(-100,200),new punto(-70,200), new punto(-70,170));
-        var ch2 = new cuad(new punto(-105,200),new punto(-105,220),new punto(-65,220), new punto(-65,200));
-
-        var puerta = [new objeto(id,c1,'cuad'),new objeto(id,c2,'cuad'),new objeto(id,c3,'cuad')];
-        
-        var techo = new cuad(new punto(-140,140),new punto(-100,170),new punto(100,170), new punto(140,140));
-        var chimenea = [new objeto(id,ch1,'cuad'),new objeto(id,ch2,'cuad')];
-        var pared = new cuad(new punto(-130,140),new punto(-130,0),new punto(130,0), new punto(130,140));
-
-        var casa = [new objeto(trasladar(-55,0),puerta,'lista'),new objeto(prod_matriz(trasladar(100,90),rotar(Math.PI/2)),puerta,'lista'),new objeto(id,techo,'cuad'),new objeto(id,pared,'cuad'),new objeto(id,chimenea,'lista'),new objeto(trasladar(60,0),chimenea,'lista')];
 
         var escena;
 
@@ -728,15 +678,14 @@
               parseFloat(jscolor1.color.rgb[2])];
 
         if(numEsc == 0) {
-            /*var casas = [new objeto(trasladar(0,-250),casa,'lista'),new objeto(trasladar(0,0),casa,'lista')];
-            var escena = new objeto(id,casas,'lista');
-            escena.graf_obj(mprinc,c1);*/
             var cubo1 = new cubo(new punto(-1,-1,-1),new punto(-1,1,-1),new punto(-1,-1,1), new punto(-1,1,1),
                                  new punto(1,-1,-1), new punto(1,1,-1), new punto(1,-1,1), new punto(1,1,1));
-            var o = new objeto(id,cubo1,'cubo');
-            o.graf_obj(id,c1);
 
+            var o = [new objeto(id,cubo1,'cubo'),new objeto(trasladar3D(2,2,2),cubo1,'cubo'),new objeto(trasladar3D(2,-2,2),cubo1,'cubo'),new objeto(trasladar3D(-2,-2,-2),cubo1,'cubo')];
+            var esc = new objeto(id,o,'lista');
+            esc.graf_obj(id,c1);
         }
+
         if(numEsc == 1) { // linea
             var p1 = [-100,-100,1.0];
             var p2 = [0,100,1.0];
@@ -790,8 +739,6 @@
                            Math.floor(p5[1])]);
         }
         
-        //document.onkeyup = handleKeyUp;
- 
         initBuffers();
         dibujarEscena();
     }
@@ -800,7 +747,7 @@
 </head> 
  
  
-<body onload="        document.onkeydown = handleKeyDown; calc();"> 
+<body onload="        document.onkeyup = handleKeyUp; document.onkeydown = handleKeyDown; calc();"> 
     <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 1 - Computaci&oacute;n Gr&aacute;fica UBA</div>
     
     El trabajo pr&aacute;ctico propone la implementaci&oacute;n de algoritmos de discretizaci&oacute;n de l&iacute;neas (DDA y Bresenham), Conversi&oacute;n Scan de Pol&iacute;gonos convexos y grafo de escena.<br/>

@@ -677,9 +677,15 @@
 //        currentlyPressedKeys[event.keyCode] = true;
 
         if (String.fromCharCode(event.keyCode) == "A") {
+            ang1-=10;
+        }
+        if (String.fromCharCode(event.keyCode) == "D") {
             ang1+=10;
         }
         if (String.fromCharCode(event.keyCode) == "S") {
+            ang2-=10;
+        }
+        if (String.fromCharCode(event.keyCode) == "W") {
             ang2+=10;
         }
 

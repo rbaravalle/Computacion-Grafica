@@ -63,6 +63,8 @@
     var trasladarY = 0;
     var trasladarZ = 0;
     var rotarAng = 0;
+    var ptosControl = [];
+    var paso = 5; // ?
     var ang1 = 0;
     var ang2 = 0;
     var pMatrix = mat4.create();
@@ -128,7 +130,7 @@
         gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
 
         //if(tipoLinea == 2 && numEsc != 2) // nativo
-        gl.drawArrays(gl.LINES, 0, points.length/3);
+        gl.drawArrays(gl.TRIANGLES, 0, points.length/3);
         /*else // se dibujan los buffers en pantalla
            gl.drawArrays(gl.POINTS, 0, points.length/2);    */
     } 
@@ -246,51 +248,91 @@
         }
     }
 
-    function circDDA(radio,cx,cy) {
-        var rx = radio;
-        var x = Math.round(rx);
-        var y = 0; // se comienza en el punto (r,0)
-
-        while(y<x) {
-            putpixel(x+cx,y+cy);
-            putpixel(y+cx,x+cy);
-            putpixel(-x+cx,y+cy);
-            putpixel(-y+cx,x+cy);
-            putpixel(x+cx,-y+cy);
-            putpixel(y+cx,-x+cy);
-            putpixel(-x+cx,-y+cy);
-            putpixel(-y+cx,-x+cy);
-
-            rx -= y/rx;
-            x = Math.round(rx);
-            y++;
+    function bernstein(u) {
+        var n = ptosControl.length;
+        var x,y;
+        x = 0;
+        y = 0;
+        for(var i = 0; i < n; i++) {
+           var bni = fact(n-1,i,u);
+           x += bni*ptosControl[i][0];
+           y += bni*ptosControl[i][1];
         }
+        return [Math.floor(x),Math.floor(y)];
+
     }
 
-    function circBresenham(radio,cx,cy) {
-        var rx = radio;
-        var x = rx;
-        var y = 0; // se comienza en el punto (r,0)
-        var e = 0;
+    function bezier3D() {
+        if(ptosControl.length < 1) return;
+        var x = Math.floor(ptosControl[0][0]);
+        var y = Math.floor(ptosControl[0][1]);
+        var x2 = x;
+        var y2 = y;
+        var u,v;
+        var aux = []; // ?
 
-        while(y<x) {
-            putpixel(x+cx,y+cy);
-            putpixel(y+cx,x+cy);
-            putpixel(-x+cx,y+cy);
-            putpixel(x+cx,-y+cy);
-            putpixel(-y+cx,x+cy);
-            putpixel(y+cx,-x+cy);
-            putpixel(-x+cx,-y+cy);
-            putpixel(-y+cx,-x+cy);
 
-            e += 2*y+1;
-            y++;
-            if(2*e > 2*x -1) {
-                x--;
-                e -= 2*x+1;
+        var bv,bu;
+        var p = {'x': 0, 'y':0,'z':0};
+        for(var pi = 0; pi <= paso; pi++) {
+                aux[pi] = [0,0,0]; // ??
+        }
+        for(var pj = 0; pj <= paso; pj++) {
+            v = pj/paso;
+            for(var pi = 0; pi <= paso; pi++) {
+                u = pi/paso;
+                for(var j = 0; j < ptosControl.length-1; j++) {
+                    bv = bernstein(v,j);
+                    for(var i = 0; i < ptosControl.length-1; i++) {
+                        bu = bernstein(u,i)*bv;
+                        p.x += ptosControl[i][j][0]*bu;
+                        p.y += ptosControl[i][j][1]*bu;
+                        p.z += ptosControl[i][j][2]*bu;
+                    }
+                }
+                linea(new punto(aux[pi][0],aux[pi][1],aux[pi][2]),
+                     p,c);
+                aux[pi][0] = p.x;
+                aux[pi][1] = p.y;
+                aux[pi][2] = p.z;
+
+            }
+            for(var pi = 1; pi <= paso; pi++) {
+                linea(new punto(aux[pi-1][0],aux[pi-1][1],aux[pi-1][2]),
+                     new punto(aux[pi][0],aux[pi][1],aux[pi][2]),c);
             }
         }
+
+        dibNodo(x,y,c1);
+        var p1,p2;
+        for(var i = 1; i <= paso; i++) {
+            u = i/paso;
+            if(tipoBase == 0) {
+                p1 = deCasteljau(u);
+                lineaDDA(x,y,p1[0],p1[1],c1);
+                dibNodo(p1[0],p1[1],c1);
+
+                x = p1[0];
+                y = p1[1];
+            }
+
+            if(tipoBase == 1) {
+                p2 = bernstein(u);
+                lineaDDA(x2,y2,p2[0],p2[1],c1);
+                dibNodo(p2[0],p2[1],c1);
+
+                x2 = p2[0];
+                y2 = p2[1];
+            }
+        }
+        for(var i = 0; i < ptosControl.length-1; i++) {
+            lineaDDA(ptosControl[i][0],ptosControl[i][1],
+                     ptosControl[i+1][0],ptosControl[i+1][1],c3);
+            dibNodo(ptosControl[i][0],ptosControl[i][1],c3);
+        }
+        dibNodo(ptosControl[ptosControl.length-1][0],ptosControl[ptosControl.length-1][1],c3);
     }
+
 
     function alertar(p) {
         var str = "";
@@ -441,7 +483,7 @@
         
     }
 
-    function linea(p1,p2,c) {
+    ion linea(p1,p2,c) {
         putpixel(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p1.z),c);
         putpixel(Math.floor(p2.x),Math.floor(p2.y),Math.floor(p2.z),c);
     }

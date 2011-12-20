@@ -17,24 +17,47 @@
 
     varying vec4 vColor;
     varying vec4 vPosition;
+    varying vec3 vTransformedNormal;
  
     void main(void) {
-        gl_FragColor = vColor;
+
+        vec3 lightDirection = normalize(vec3(0.0,0.0,-4.0) - vPosition.xyz);
+        vec3 eyeDirection = normalize(-vPosition.xyz);
+        vec3 normal = normalize(vTransformedNormal);
+
+        vec3 reflectionDirection = reflect(-lightDirection, normal);
+        // halfway vector between L and V
+        vec3 halfv = normalize(eyeDirection + lightDirection);
+        float NH = dot(normal,halfv);
+
+        float uMaterialShininess = 64.0;
+        float specularLightWeighting = pow(max(NH, 0.0), uMaterialShininess);
+        float diffuseLightWeighting = max(dot(normal, lightDirection), 0.0);
+
+        vec3 spec = vec3(0.8,0.8,0.8) * specularLightWeighting;
+        vec3 diffuse = vec3(0.8,0.8,0.8) * diffuseLightWeighting;
+        spec += diffuse + vec3(0.2,0.2,0.2);
+
+        gl_FragColor = vec4(vColor.rgb * spec,vColor.a);
     }
 </script> 
  
 <script id="shader-vs" type="x-shader/x-vertex"> 
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexColor;
+    attribute vec3 aVertexNormal;
 
     varying vec4 vColor;
     varying vec4 vPosition;
+    varying vec3 vTransformedNormal;
     uniform mat4 uMVMatrix;
     uniform mat4 uPMatrix;
+    uniform mat3 uNMatrix;
  
     void main(void) {
         vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vTransformedNormal = uNMatrix * aVertexNormal;
         vColor = vec4(aVertexColor,1.0);
     }
 </script> 
@@ -52,6 +75,8 @@
     var points;
     var colorsBuffer;
     var colors;
+    var normalsBuffer;
+    var normals;
     var maxcoord = 256;
     var tipoLinea = 0;
     var tLinea = ['DDA','Bresenham','Nativo'];
@@ -61,20 +86,15 @@
     var escalaY = 1;
     var trasladarX = 0;
     var trasladarY = 0;
-    var trasladarZ = 0;
+    var trasladarZ = -5;
     var rotarAng = 0;
     var ptosControl;
-    var paso = 5; // ?
+    var paso = 5;
     var ang1 = 0;
     var ang2 = 0;
     var pMatrix = mat4.create();
     var mvMatrix = mat4.create();
     var currentlyPressedKeys = {};
-    /*var c = [parseFloat(jscolor1.color.rgb[0]),
-              parseFloat(jscolor1.color.rgb[1]),
-              parseFloat(jscolor1.color.rgb[2])];*/
-
-
 
     function initGL(canvas) {
         try {
@@ -89,12 +109,15 @@
     function initBuffers() {
         pointsBuffer = gl.createBuffer();
         colorsBuffer = gl.createBuffer();
+        normalsBuffer = gl.createBuffer();
 
         // se asocian estos vertices con el buffer triangleVertexPositionBuffer
         gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
 
     }
  
@@ -103,17 +126,17 @@
         // color de fondo de la escena
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-        /*mat4.identity(pMatrix);
-        mat4.identity(mvMatrix);*/
-
         mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
         mat4.identity(mvMatrix);
 
-        mat4.rotate(mvMatrix, degToRad(ang1), [0, 1, 0]);
-        mat4.rotate(mvMatrix, degToRad(ang2), [1, 0, 0]);
+        mat4.translate(pMatrix, [trasladarX, trasladarY, trasladarZ]);
+        mat4.rotate(pMatrix, degToRad(ang1), [0, 1, 0]);
+        mat4.rotate(pMatrix, degToRad(ang2), [1, 0, 0]);
 
-        mat4.translate(mvMatrix, [trasladarX, trasladarY, trasladarZ]);
+        var normalMatrix = mat3.create();
+        mat4.toInverseMat3(mvMatrix, normalMatrix);
+        mat3.transpose(normalMatrix);
 
         // se dibuja en este viewport (subconjunto del espacio)
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -131,19 +154,21 @@
         gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
+
         gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
         gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+        gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
 
-        //if(tipoLinea == 2 && numEsc != 2) // nativo
-        gl.drawArrays(gl.LINES, 0, points.length/3);
-        /*else // se dibujan los buffers en pantalla
-           gl.drawArrays(gl.POINTS, 0, points.length/2);    */
+        gl.drawArrays(gl.TRIANGLES, 0, points.length/3);
     } 
 
     // simulacion de buffers
     function initVariables() {
         points = [];
         colors = [];
+        normals = [];
         var cant = 12;
         ptosControl = [];
         for(var i = 0; i < cant; i++) {
@@ -168,6 +193,12 @@
         else {
             colors.push(1.0,1.0,1.0,1.0);
         }
+    }
+
+    function putnormal(x,y,z) {
+        normals.push(x,y,z);
+        normals.push(x,y,z);
+        normals.push(x,y,z);
     }
 
     function lineaDDA(x0,y0,x1,y1,c1,c2) {
@@ -577,6 +608,16 @@
         return res;
     }
 
+    function triangulo(p1,p2,p3,c) {
+        putpixel(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p1.z),c);
+        putpixel(Math.floor(p2.x),Math.floor(p2.y),Math.floor(p2.z),c);
+        putpixel(Math.floor(p3.x),Math.floor(p3.y),Math.floor(p3.z),c);
+        var v = [];
+        vec3.cross([p1.x-p2.x,p1.y-p2.y,p1.z-p2.z],
+                   [p3.x-p2.x,p3.y-p2.y,p3.z-p2.z],v);
+        putnormal(v[0],v[1],v[2]);
+    }
+
     cubo.prototype.graf_cubo = function(o,at,c) {
         var t1 = prod_matriz3D(o.t,at);
         var arr = [];
@@ -594,41 +635,53 @@
 
 
         // cara 1
-        linea(p1,p5,c);
+        triangulo(p6,p5,p1,c); // adelante
+        triangulo(p1,p2,p6,c);
+        /*linea(p1,p5,c);
         linea(p5,p6,c);
         linea(p6,p2,c);
-        linea(p2,p1,c);
+        linea(p2,p1,c);*/
 
         // cara 2
-        linea(p5,p7,c);
+        triangulo(p8,p7,p5,c); // derecha
+        triangulo(p5,p6,p8,c);
+        /*linea(p5,p7,c);
         linea(p7,p8,c);
         linea(p8,p6,c);
-        linea(p6,p5,c);
+        linea(p6,p5,c);*/
 
         // cara 3
-        linea(p7,p8,c);
+        triangulo(p7,p8,p4,c); // atras
+        triangulo(p7,p4,p3,c);
+        /*linea(p7,p8,c);
         linea(p8,p4,c);
         linea(p4,p3,c);
-        linea(p3,p7,c);
+        linea(p3,p7,c);*/
 
         // cara 4
-        linea(p3,p4,c);
+        triangulo(p3,p4,p2,c); // izquierda
+        triangulo(p2,p1,p3,c);
+        /*linea(p3,p4,c);
         linea(p4,p2,c);
         linea(p2,p1,c);
-        linea(p1,p3,c);
+        linea(p1,p3,c);*/
 
 
         // cara 5
-        linea(p2,p6,c);
+        triangulo(p8,p6,p2,c);
+        triangulo(p2,p4,p8,c); // arriba
+        /*linea(p2,p6,c);
         linea(p6,p8,c);
         linea(p8,p4,c);
-        linea(p4,p2,c);
+        linea(p4,p2,c);*/
 
         // cara 6
-        linea(p1,p5,c);
+        triangulo(p7,p5,p1,c); // abajo
+        triangulo(p1,p3,p7,c);
+        /*linea(p1,p5,c);
         linea(p5,p7,c);
         linea(p7,p3,c);
-        linea(p3,p1,c);
+        linea(p3,p1,c);*/
 
     }
 
@@ -668,7 +721,7 @@
         return [[1,0,0,x],[0,1,0,y],[0,0,1,z],[0,0,0,1]];
     }
 
-    function escalar3D(tx,ty) {
+    function escalar3D(tx,ty,tz) {
         return [[tx,0,0,0],[0,ty,0,0],[0,0,tz,0],[0,0,0,1]];
     }
 
@@ -759,12 +812,12 @@
                                  new punto(1,-1,-1), new punto(1,1,-1),
                                  new punto(1,-1,1), new punto(1,1,1));
             var o = [new objeto(id,cubo1,'cubo'),
+                     /*new objeto(trasladar3D(2,2,2),cubo1,'cubo'),
                      new objeto(trasladar3D(2,2,2),cubo1,'cubo'),
-                     new objeto(trasladar3D(2,-2,2),cubo1,'cubo'),
-                     new objeto(trasladar3D(-2,-2,-2),cubo1,'cubo')];
+                     new objeto(trasladar3D(-2,-2,-2),cubo1,'cubo')*/];
             var esc = new objeto(id,o,'lista');
             esc.graf_obj(id,c1);
-            bezier3D(c1);
+            //bezier3D(c1);
         }
         
         initBuffers();

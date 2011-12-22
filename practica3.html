@@ -9,7 +9,6 @@
 <script type="text/javascript" src="jscolor/jscolor.js"></script>
 <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
 
-<!-- Shaders - ignorar en esta leccion -->
 <script id="shader-fs" type="x-shader/x-fragment"> 
     #ifdef GL_ES
     precision highp float;
@@ -20,14 +19,15 @@
     varying vec3 vTransformedNormal;
     uniform vec3 uPointLightingLocation;
  
-    void main(void) {
+    void main(void) { // phong
 
         vec3 lightDirection = normalize(uPointLightingLocation - vPosition.xyz);
         vec3 eyeDirection = normalize(-vPosition.xyz);
         vec3 normal = normalize(vTransformedNormal);
 
         vec3 reflectionDirection = reflect(-lightDirection, normal);
-        // halfway vector between L and V
+        
+        // vector a mitad de camino entre L y V
         vec3 halfv = normalize(eyeDirection + lightDirection);
         float NH = dot(normal,halfv);
 
@@ -61,17 +61,12 @@
         vTransformedNormal = uNMatrix * aVertexNormal;
         vColor = vec4(aVertexColor,1.0);
     }
-</script> 
-<!--// ignorar en esta leccion -->
-
-
+</script>
  
 <script type="text/javascript"> 
 
-    // variable que sirve de interfaz a opengl
     var gl;
 
-    // variable que se utilizara como buffer para los vertices del triangulo
     var pointsBuffer;
     var points;
     var colorsBuffer;
@@ -90,7 +85,7 @@
     var trasladarZ = -5;
     var rotarAng = 0;
     var ptosControl;
-    var paso = 16;
+    var paso = 12;
     var ang1 = 0;
     var ang2 = 0;
     var pMatrix = mat4.create();
@@ -143,7 +138,6 @@
 
         // se dibuja en este viewport (subconjunto del espacio)
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-        // se permiten colores en el canvas
 
         // se establece que el buffer triangleVertexPositionBuffer es el buffer actual
         gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
@@ -175,7 +169,7 @@
         points = [];
         colors = [];
         normals = [];
-        var cant = 32;
+        var cant = 12;
         ptosControl = [];
         var z;
         for(var i = 0; i < cant; i++) {
@@ -429,148 +423,6 @@
         alert(str);
     }
 
-    function lineaDDAscan(x0,y0,x1,y1,minx,maxx,miny,c1,c2,colsMin,colsMax) {
-        var dx = x1-x0;
-        var dy = y1-y0;
-
-        var x = x0;
-        var y = y0;
-        var c = c1;
-        var ri,gi,bi;
-
-        if(Math.abs(dx) > Math.abs(dy)) {
-
-            if(dx>=0) inc = 1; else inc =-1;
-            var m = dy/dx;
-            if((dy < 0 && m > 0) || (dy > 0 && m < 0)) m = -m;
-            var ult = false;
-            while(!ult) {
-                if(x==x1) ult = 1;
-                var i = Math.round(y)-miny;
-                var px = Math.round(x);
-
-                if(c2) {
-                    var p;
-                    if(y0-y1 != 0)
-                        p = (y0-Math.round(y))/(y0-y1); // y actual
-                    else p = (x0-Math.round(x))/(x0-x1)
-                    ri = c1[0] - (c1[0]-c2[0])*p;
-                    gi = c1[1] - (c1[1]-c2[1])*p;
-                    bi = c1[2] - (c1[2]-c2[2])*p;
-                    c = [ri,gi,bi];
-                }
-
-                if(px > maxx[i]) {
-                     colsMax[i] = c;
-                     maxx[i] = px;
-                }
-                if(px < minx[i]) {
-                    colsMin[i] = c;
-                    minx[i] = px;
-                }
-                x+=inc;
-                y+=m;
-            }
-        }
-        else {
-
-            if(dy>=0) inc = 1; else inc = -1;
-            var m = dx/dy;
-            if((dx < 0 && m > 0) || (dx > 0 && m < 0)) m = -m;
-            var ult = false;
-            while(!ult) {
-                if(y==y1) ult = 1;
-                var i = Math.round(y)-miny;
-                var px = Math.round(x);
-                var p;
-                if(c2) {
-                    if(y0-y1 != 0)
-                        p = (y0-Math.round(y))/(y0-y1); // y actual
-                    else p = (x0-px)/(x0-x1)
-                    ri = c1[0] - (c1[0]-c2[0])*p;
-                    gi = c1[1] - (c1[1]-c2[1])*p;
-                    bi = c1[2] - (c1[2]-c2[2])*p;
-                    c = [ri,gi,bi];
-                }
-
-                if(px > maxx[i]) {
-                     colsMax[i] = c;
-                     maxx[i] = px;
-                }
-                if(px < minx[i]) {
-                    colsMin[i] = c;
-                    minx[i] = px;
-                }
-                y+=inc;
-                x+=m;
-            }
-        }
-
-        return {"minx": minx,"maxx": maxx, "colsMax": colsMax, "colsMin": colsMin};
-    }
-
-    function conversionScan(ptos) {
-        // dibuja un triangulo entre los puntos especificados
-
-        var jscolor1 = document.getElementById('color1');
-        var jscolor2 = document.getElementById('color2');
-        var jscolor3 = document.getElementById('color3');
-
-        var c1 = [parseFloat(jscolor1.color.rgb[0]),
-              parseFloat(jscolor1.color.rgb[1]),
-              parseFloat(jscolor1.color.rgb[2])];
-
-        var c2 = [parseFloat(jscolor2.color.rgb[0]),
-              parseFloat(jscolor2.color.rgb[1]),
-              parseFloat(jscolor2.color.rgb[2])];
-
-        var c3 = [parseFloat(jscolor3.color.rgb[0]),
-              parseFloat(jscolor3.color.rgb[1]),
-              parseFloat(jscolor3.color.rgb[2])];
-
-        var cols = [c1,c2,c3];
-
-        var maxy = ptos[1];
-        var miny = ptos[1];
-        for(var i = 2; i < ptos.length;i+=2) {
-            if(ptos[i+1] > maxy) maxy = ptos[i+1];
-            if(ptos[i+1] < miny) miny = ptos[i+1];
-        }
-
-        var minx = [];
-        var maxx = [];
-        var colsMin = [];
-        var colsMax = [];
-        for(var i = miny; i < maxy; i++) {
-            minx[i-miny] = maxcoord+1;
-            maxx[i-miny] = -maxcoord-1;
-            colsMin[i] = c1;
-            colsMax[i] = c1;
-        }
-        var cantC = cols.length;
-        var j;
-        for(var i = 0, j=0; i+2 < ptos.length;i+=2,j++) {
-            var t = lineaDDAscan(ptos[i],ptos[i+1],ptos[i+2],ptos[i+3],
-                                 minx,maxx,miny,cols[j%cantC],cols[(j+1)%cantC],colsMin,colsMax);
-            minx = t.minx;
-            maxx = t.maxx;
-            colsMin = t.colsMin;
-            colsMax = t.colsMax;
-        }
-
-        t = lineaDDAscan(ptos[0],ptos[1],ptos[ptos.length-2],ptos[ptos.length-1],
-                         minx,maxx,miny,cols[0],cols[(j)%cantC],colsMin,colsMax);
-        minx = t.minx;
-        maxx = t.maxx;
-        colsMin = t.colsMin;
-        colsMax = t.colsMax;
-
-        for(var i = miny+1; i <= maxy; i++) {
-            lineaDDA(minx[i-miny], i,maxx[i-miny],i,colsMin[i-miny],colsMax[i-miny]);
-        }
-        
-    }
-
     function linea(p1,p2,c) {
         putpixel(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p1.z),c);
         putpixel(Math.floor(p2.x),Math.floor(p2.y),Math.floor(p2.z),c);
@@ -655,7 +507,7 @@
         return res;
     }
 
-    function triangulo(p1,p2,p3,c) {
+    function triangulo(p1,p2,p3,c) { // grafica un triangulo entre los tres puntos
         putpixel(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p1.z),c);
         putpixel(Math.floor(p2.x),Math.floor(p2.y),Math.floor(p2.z),c);
         putpixel(Math.floor(p3.x),Math.floor(p3.y),Math.floor(p3.z),c);
@@ -708,16 +560,16 @@
         linea(p4,p2,c);*/
 
         // cara 3
-        triangulo(p7,p8,p4,c); // atras
-        triangulo(p4,p3,p7,c);
+        triangulo(p4,p8,p7,c); // atras
+        triangulo(p7,p3,p4,c);
         /*linea(p7,p8,c);
         linea(p8,p4,c);
         linea(p4,p3,c);
         linea(p3,p7,c);*/
 
         // cara 4
-        triangulo(p3,p4,p2,c); // izquierda
-        triangulo(p2,p1,p3,c);
+        triangulo(p2,p4,p3,c); // izquierda
+        triangulo(p3,p1,p2,c);
         /*linea(p3,p4,c);
         linea(p4,p2,c);
         linea(p2,p1,c);
@@ -725,8 +577,8 @@
 
 
         // cara 6
-        triangulo(p3,p1,p5,c); // abajo
-        triangulo(p5,p7,p3,c);
+        triangulo(p5,p1,p3,c); // abajo
+        triangulo(p3,p7,p5,c);
         /*linea(p1,p5,c);
         linea(p5,p7,c);
         linea(p7,p3,c);
@@ -742,7 +594,6 @@
         else {
             var t1 = prod_matriz3D(t,this.t);
             for(var i = 0; i < this.e.length; i++) {
-                //var t1 = prod_matriz3D(t,this.t); // es la misma en cada iteracion!
                 this.e[i].graf_obj(t1,c);
             }
         }
@@ -877,7 +728,7 @@
 
             var esc = new objeto(id,o,'lista');
             esc.graf_obj(id,c1);
-            //bezier3D(c1);
+            bezier3D(c1);
         }
 
         gl.enable(gl.DEPTH_TEST); // realiza z-buffer

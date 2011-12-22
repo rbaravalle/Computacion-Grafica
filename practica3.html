@@ -96,6 +96,7 @@
     var pMatrix = mat4.create();
     var mvMatrix = mat4.create();
     var currentlyPressedKeys = {};
+    var pos = [0.0,0.0,rotarAng];
 
     function initGL(canvas) {
         try {
@@ -126,6 +127,7 @@
     function dibujarEscena() {
         // color de fondo de la escena
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
@@ -141,9 +143,7 @@
 
         // se dibuja en este viewport (subconjunto del espacio)
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-
         // se permiten colores en el canvas
-        gl.clear(gl.COLOR_BUFFER_BIT);
 
         // se establece que el buffer triangleVertexPositionBuffer es el buffer actual
         gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
@@ -164,10 +164,10 @@
         gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
         gl.uniform3f(
             shaderProgram.pointLightingLocationUniform,
-            0.0,0.0,rotarAng
+            pos[0],pos[1],rotarAng
         );
 
-        gl.drawArrays(gl.LINES, 0, points.length/3);
+        gl.drawArrays(gl.TRIANGLES, 0, points.length/3);
     } 
 
     // simulacion de buffers
@@ -175,18 +175,18 @@
         points = [];
         colors = [];
         normals = [];
-        var cant = 12;
+        var cant = 32;
         ptosControl = [];
         var z;
         for(var i = 0; i < cant; i++) {
             var pp = [];
             for(var j = 0; j < cant; j++) {
                 z = 0.0;
-                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = 10.0;
-                if((j >= 9 && i >= 9) && (j <= 10 && i <= 10)) z = 10.0;
-                if((j >= 9 && i >= 1) && (j <= 10 && i <= 2)) z = 10.0;
-                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = 10.0;
-                if((j >= 1 && i >= 9) && (j <= 2 && i <= 10)) z = 10.0;
+                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = 30.0;
+                if((j >= 9 && i >= 9) && (j <= 10 && i <= 10)) z = 30.0;
+                if((j >= 9 && i >= 1) && (j <= 10 && i <= 2)) z = 30.0;
+                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = 30.0;
+                if((j >= 1 && i >= 9) && (j <= 2 && i <= 10)) z = 30.0;
                 pp.push([i,j,z]);
             }
             ptosControl.push(pp);
@@ -692,16 +692,24 @@
         linea(p2,p1,c);*/
 
         // cara 2
-        triangulo(p5,p7,p8,c); // derecha
-        triangulo(p8,p6,p5,c);
+        triangulo(p8,p7,p5,c); // derecha
+        triangulo(p5,p6,p8,c);
         /*linea(p5,p7,c);
         linea(p7,p8,c);
         linea(p8,p6,c);
         linea(p6,p5,c);*/
 
+        // cara 5
+        triangulo(p8,p6,p2,c);
+        triangulo(p2,p4,p8,c); // arriba
+        /*linea(p2,p6,c);
+        linea(p6,p8,c);
+        linea(p8,p4,c);
+        linea(p4,p2,c);*/
+
         // cara 3
         triangulo(p7,p8,p4,c); // atras
-        triangulo(p7,p4,p3,c);
+        triangulo(p4,p3,p7,c);
         /*linea(p7,p8,c);
         linea(p8,p4,c);
         linea(p4,p3,c);
@@ -716,17 +724,9 @@
         linea(p1,p3,c);*/
 
 
-        // cara 5
-        triangulo(p8,p6,p2,c);
-        triangulo(p2,p4,p8,c); // arriba
-        /*linea(p2,p6,c);
-        linea(p6,p8,c);
-        linea(p8,p4,c);
-        linea(p4,p2,c);*/
-
         // cara 6
-        triangulo(p7,p5,p1,c); // abajo
-        triangulo(p1,p3,p7,c);
+        triangulo(p3,p1,p5,c); // abajo
+        triangulo(p5,p7,p3,c);
         /*linea(p1,p5,c);
         linea(p5,p7,c);
         linea(p7,p3,c);
@@ -872,12 +872,15 @@
                      new objeto(trasladar3D(-2.0,0.0,0.0),[cubochico],'lista'),
                      new objeto(trasladar3D(-3.0,-4.0,0.0),[cubochico2],'lista'),
                      new objeto(trasladar3D(-3.0,4.0,0.0),[cubochico2],'lista'),
-                     new objeto(trasladar3D(2.0,0.0,0.0),[cubochico2],'lista'),];
+                     new objeto(trasladar3D(2.0,0.0,0.0),[cubochico2],'lista'),
+                     new objeto(trasladar3D(pos[0],pos[1],rotarAng),[cubochico2],'lista')];
 
             var esc = new objeto(id,o,'lista');
-            //esc.graf_obj(id,c1);
-            bezier3D(c1);
+            esc.graf_obj(id,c1);
+            //bezier3D(c1);
         }
+
+        gl.enable(gl.DEPTH_TEST); // realiza z-buffer
         
         initBuffers();
         dibujarEscena();
@@ -913,8 +916,8 @@
     <input id="trasladarYmenos" type="button" value="<" onclick="trasladarY-=0.5; document.getElementById('trasladarY').innerHTML=trasladarY.toFixed(2); calc();"/>
     <input id="trasladarYmas" type="button" value=">" onclick="trasladarY+=0.5; document.getElementById('trasladarY').innerHTML=trasladarY.toFixed(2); calc();"/>Trasladar Y <span id="trasladarY" >1.00</span><br/>
 
-    <input id="rotarYmenos" type="button" value="<" onclick="rotarAng-=0.1; document.getElementById('rotar').innerHTML=rotarAng.toFixed(2); calc();"/>
-    <input id="rotarYmas" type="button" value=">" onclick="rotarAng+=0.1; document.getElementById('rotar').innerHTML=rotarAng.toFixed(2); calc();"/>Rotar <span id="rotar" >0.0</span><br/>
+    <input id="rotarYmenos" type="button" value="<" onclick="rotarAng-=1; document.getElementById('rotar').innerHTML=rotarAng.toFixed(2); calc();"/>
+    <input id="rotarYmas" type="button" value=">" onclick="rotarAng+=1; document.getElementById('rotar').innerHTML=rotarAng.toFixed(2); calc();"/>Rotar <span id="rotar" >0.0</span><br/>
 </body> 
  
 </html> 

@@ -85,7 +85,7 @@
     var trasladarZ = -5;
     var rotarAng = 0;
     var ptosControl;
-    var paso = 12;
+    var paso = 8;
     var ang1 = 0;
     var ang2 = 0;
     var pMatrix = mat4.create();
@@ -161,7 +161,7 @@
             pos[0],pos[1],rotarAng
         );
 
-        gl.drawArrays(gl.TRIANGLES, 0, points.length/3);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, points.length/3);
     } 
 
     // simulacion de buffers
@@ -326,6 +326,26 @@
         return (num/den)*m;
     }
 
+    function bernsteinD(u,i) {
+        var n = ptosControl.length;
+        return factD(n-1,i,u);
+    }
+
+    function factD(n,i,u) {
+        var num = 1;
+        var den = 1;
+        var m = i*Math.pow(u,i-1)*Math.pow(1-u,n-i)+ 
+                  Math.pow(u,i)*(n-i)*Math.pow((1-u),n-i-1));
+        if(n==0 || i == 0) return m;
+        for(var j = 1; j <= i; j++) {
+            den*=j;
+        }
+        for(var j = n; j >= n-i+1; j--) {
+            num*=j;
+        }
+        return (num/den)*m;
+    }
+
 
     function bezier3D(c) {
         if(ptosControl.length < 1) return;
@@ -382,6 +402,30 @@
                         p[0] += bu*h[i][j][0];
                         p[1] += bu*h[i][j][1];
                         p[2] += bu*h[i][j][2];
+                    }
+                }
+
+                h = [];
+                for(var i = 0; i < g.length; i++) {
+                    h[i] = [];
+                    for(var j = 0; j < g.length; j++) {
+                        h[i][j] = [];
+                        h[i][j][0] = g[i][j][0];
+                        h[i][j][1] = g[i][j][1];
+                        h[i][j][2] = g[i][j][2];
+                    }
+                }
+
+                var pD = [0,0,0];
+
+                // derivada
+                for(var j = 0; j <= h.length-1; j++) {
+                    bv = bernsteinD(v,j);
+                    for(var i = 0; i <= h.length-1; i++) {
+                        bu = bernsteinD(u,i)*bv;
+                        pD[0] += bu*h[i][j][0];
+                        pD[1] += bu*h[i][j][1];
+                        pD[2] += bu*h[i][j][2];
                     }
                 }
 
@@ -727,7 +771,7 @@
                      new objeto(trasladar3D(pos[0],pos[1],rotarAng),[cubochico2],'lista')];
 
             var esc = new objeto(id,o,'lista');
-            esc.graf_obj(id,c1);
+            //esc.graf_obj(id,c1);
             bezier3D(c1);
         }
 

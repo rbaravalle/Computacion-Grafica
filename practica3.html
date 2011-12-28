@@ -91,7 +91,7 @@
     var pMatrix = mat4.create();
     var mvMatrix = mat4.create();
     var currentlyPressedKeys = {};
-    var pos = [0.0,0.0,rotarAng];
+    var pos = [-50.0,0.0,rotarAng];
 
     function initGL(canvas) {
         try {
@@ -712,9 +712,9 @@
             var o = [ new objeto(trasladar3D(0.0,2.0,0.0),[cubochico],'lista'),
                      new objeto(trasladar3D(0.0,-2.0,0.0),[cubochico],'lista'),
                      //new objeto(trasladar3D(2.0,0.0,0.0),[cubochico],'lista'),
-                     new objeto(trasladar3D(0.0,0.0,0.0),[cubochico],'lista'),
-                     new objeto(trasladar3D(-2.0,-2.0,0.0),[cubochico],'lista'),
-                     new objeto(trasladar3D(-2.0,2.0,0.0),[cubochico],'lista'),
+                     //new objeto(trasladar3D(0.0,0.0,0.0),[cubochico],'lista'),
+                     //new objeto(trasladar3D(-2.0,-2.0,0.0),[cubochico],'lista'),
+                     //new objeto(trasladar3D(-2.0,2.0,0.0),[cubochico],'lista'),
                      new objeto(trasladar3D(-2.0,0.0,0.0),[cubochico],'lista')
                     ];
 
@@ -723,11 +723,14 @@
             var esc3 = new objeto(trasladar3D(4.0,2.0,-1.5),[esc],'lista');
             var esc4 = new objeto(trasladar3D(4.0,7.0,-1.5),[esc],'lista');
             var esc5 = new objeto(trasladar3D(7.0,7.0,-1.5),[esc],'lista');
-            var esc6 = new objeto(trasladar3D(8.0,2,-4.5),[esc],'lista');
+
             var esc7 = new objeto(trasladar3D(4.0,2.0,-4.5),[esc],'lista');
             var esc8 = new objeto(trasladar3D(4.0,7.0,-4.5),[esc],'lista');
-            var esc9 = new objeto(trasladar3D(7.0,7.0,-4.5),[esc],'lista');
-            var e = new objeto(id,[esc2,esc3,esc4,esc5,esc6,esc7,esc8,esc9],'lista');
+            //var esc9 = new objeto(trasladar3D(7.0,7.0,-4.5),[esc],'lista');
+            var esc6 = new objeto(trasladar3D(7.0,7.0,-7.5),[esc],'lista');
+            var esc9 = new objeto(trasladar3D(7.0,4.0,-7.5),[esc],'lista');
+            var esc10 = new objeto(trasladar3D(7.0,4.0,-10.5),[esc],'lista');
+            var e = new objeto(id,[esc2,esc3,esc4,esc5,/*esc6,esc7,*/esc8,esc9,esc6],'lista');
             e.graf_obj(id,c2);
             bezier3D(c1);
         }
@@ -749,9 +752,9 @@
     El tipo de l&iacute;nea no afecta al ejemplo de Conversi&oacute;n Scan.<br/>
     <canvas id="canvas" width="800" height="800" style="float:left"></canvas>  
     <input id="reset" type="button" value="Reset" onclick="reset();"/><br/>
-    Colores <input id="color1" class="color" value="C7BBAC" size=5 onchange="calc();">
-    <input id="color2" class="color" value="C7BBAC" size=5 onchange="calc();">
-    <input id="color3" class="color" value="C7BBAC" size=5 onchange="calc();"><br/>
+    Colores <input id="color1" class="color" value="C7B68D" size=5 onchange="calc();">
+    <input id="color2" class="color" value="FCFCFC" size=5 onchange="calc();">
+    <input id="color3" class="color" value="C7B68D" size=5 onchange="calc();"><br/>
     <input id="sigtLineamenos" type="button" value="<" onclick="tipoLinea--; if(tipoLinea<0) tipoLinea = tLinea.length-1; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>
     <input id="sigtLineamas" type="button" value=">" onclick="tipoLinea++; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>Tipo de Linea: <span id="tipoLinea" >DDA</span>
     <br/>

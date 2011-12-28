@@ -85,7 +85,7 @@
     var trasladarZ = -5;
     var rotarAng = 0;
     var ptosControl;
-    var paso = 8;
+    var paso = 10;
     var ang1 = 0;
     var ang2 = 0;
     var pMatrix = mat4.create();
@@ -161,7 +161,7 @@
             pos[0],pos[1],rotarAng
         );
 
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, points.length/3);
+        gl.drawArrays(gl.TRIANGLES, 0, points.length/3);
     } 
 
     // simulacion de buffers
@@ -176,11 +176,11 @@
             var pp = [];
             for(var j = 0; j < cant; j++) {
                 z = 0.0;
-                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = 30.0;
-                if((j >= 9 && i >= 9) && (j <= 10 && i <= 10)) z = 30.0;
-                if((j >= 9 && i >= 1) && (j <= 10 && i <= 2)) z = 30.0;
-                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = 30.0;
-                if((j >= 1 && i >= 9) && (j <= 2 && i <= 10)) z = 30.0;
+                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = 50.0;
+                if((j >= 9 && i >= 9) && (j <= 10 && i <= 10)) z = 50.0;
+                if((j >= 9 && i >= 1) && (j <= 10 && i <= 2)) z = 50.0;
+                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = 50.0;
+                if((j >= 1 && i >= 9) && (j <= 2 && i <= 10)) z = 50.0;
                 pp.push([i,j,z]);
             }
             ptosControl.push(pp);
@@ -335,7 +335,7 @@
         var num = 1;
         var den = 1;
         var m = i*Math.pow(u,i-1)*Math.pow(1-u,n-i)+ 
-                  Math.pow(u,i)*(n-i)*Math.pow((1-u),n-i-1));
+                  Math.pow(u,i)*(n-i)*Math.pow((1-u),n-i-1);
         if(n==0 || i == 0) return m;
         for(var j = 1; j <= i; j++) {
             den*=j;
@@ -391,7 +391,6 @@
 
        for(var pj = 0; pj <= paso; pj++) {
             v = pj/paso;
-            //aux = [];
             for(var pi = 0; pi <= paso; pi++) {
                 u = pi/paso;
                 var p = [0,0,0];
@@ -417,43 +416,28 @@
                 }
 
                 var pD = [0,0,0];
-
-                // derivada
-                for(var j = 0; j <= h.length-1; j++) {
-                    bv = bernsteinD(v,j);
-                    for(var i = 0; i <= h.length-1; i++) {
-                        bu = bernsteinD(u,i)*bv;
-                        pD[0] += bu*h[i][j][0];
-                        pD[1] += bu*h[i][j][1];
-                        pD[2] += bu*h[i][j][2];
-                    }
-                }
-
-                h = [];
-                for(var i = 0; i < g.length; i++) {
-                    h[i] = [];
-                    for(var j = 0; j < g.length; j++) {
-                        h[i][j] = [];
-                        h[i][j][0] = g[i][j][0];
-                        h[i][j][1] = g[i][j][1];
-                        h[i][j][2] = g[i][j][2];
-                    }
-                }
-
                 
                 if(!aux[pi]) aux[pi]= p;
-                putnormal(0.0,0.0,1.0);
-                putnormal(0.0,0.0,1.0);
-                //if(pi==paso)
-                linea(new punto(aux[pi][0],aux[pi][1],aux[pi][2]),new punto(p[0],p[1],p[2]),c);
+                //putnormal(0.0,0.0,1.0);
+                //putnormal(0.0,0.0,1.0);
+                var p1, p4;
+                if(pj > 0 ) {
+                    if(pi - 1  >= 0 ) p1 = {"x": aux[pi-1][0], "y": aux[pi-1][1], "z": aux[pi-1][2]};
+                    var p2 = {"x": p[0], "y": p[1], "z": p[2]};
+                    var p3 = {"x": aux[pi][0], "y": aux[pi][1], "z": aux[pi][2]};
+                    if(pi + 1 <= paso) p4 = {"x": aux[pi+1][0], "y": aux[pi+1][1], "z": aux[pi+1][2]};
+                    if(pi - 1  >= 0 ) triangulo(p1,p2,p3,c);
+                    if(pi + 1 <= paso) triangulo(p3,p2,p4,c);
+                }
+                //linea(new punto(aux[pi][0],aux[pi][1],aux[pi][2]),new punto(p[0],p[1],p[2]),c);
                 aux[pi] = p;
             }
             for(var pi = 1; pi <= paso; pi++) {
-                putnormal(0.0,0.0,1.0);
-                putnormal(0.0,0.0,1.0);
+                //putnormal(0.0,0.0,1.0);
+                //putnormal(0.0,0.0,1.0);
                 //if(pi == 4)
-                linea(new punto(aux[pi-1][0],aux[pi-1][1],aux[pi-1][2]),
-                     new punto(aux[pi][0],aux[pi][1],aux[pi][2]),c);
+                /*linea(new punto(aux[pi-1][0],aux[pi-1][1],aux[pi-1][2]),
+                     new punto(aux[pi][0],aux[pi][1],aux[pi][2]),c);*/
             }
         }
 
@@ -633,7 +617,6 @@
     objeto.prototype.graf_obj = function(t,c) {
         if(this.tipo == 'cubo') {
             this.e.graf_cubo(this,t,c);
-
         }
         else {
             var t1 = prod_matriz3D(t,this.t);
@@ -661,16 +644,36 @@
                 [0,0,1]];
     }
 
+    function rotarX3D(alpha) {
+        return [
+                [1,0,0,0],
+                [0,Math.cos(alpha),-Math.sin(alpha),0],
+                [0,Math.sin(alpha),Math.cos(alpha),0],
+                [0,0,0,1]];
+    }
+
+    function rotarY3D(alpha) {
+        return [
+                [Math.cos(alpha),0,-Math.sin(alpha),0],
+                [0,1,0,0],
+                [Math.sin(alpha),0,Math.cos(alpha),0],
+                [0,0,0,1]];
+    }
+
+    function rotarZ3D(alpha) {
+        return [
+                [Math.cos(alpha),-Math.sin(alpha),0,0],
+                [Math.sin(alpha),Math.cos(alpha),0,0],
+                [0,0,1,0],
+                [0,0,0,1]];
+    }
+
     function trasladar3D(x,y,z) {
         return [[1,0,0,x],[0,1,0,y],[0,0,1,z],[0,0,0,1]];
     }
 
     function escalar3D(tx,ty,tz) {
         return [[tx,0,0,0],[0,ty,0,0],[0,0,tz,0],[0,0,0,1]];
-    }
-
-    function rotarZ3D(a) {
-        return [[Math.cos(a),Math.sin(a),0,0],[-Math.sin(a),Math.cos(a),0,0],[0,0,1,0],[0,0,0,1]];
     }
 
     function reset() {;
@@ -750,15 +753,20 @@
         var escena;
 
         var jscolor1 = document.getElementById('color1');
+        var jscolor2 = document.getElementById('color2');
         var c1 = [parseFloat(jscolor1.color.rgb[0]),
               parseFloat(jscolor1.color.rgb[1]),
               parseFloat(jscolor1.color.rgb[2])];
+        var c2 = [parseFloat(jscolor2.color.rgb[0]),
+              parseFloat(jscolor2.color.rgb[1]),
+              parseFloat(jscolor2.color.rgb[2])];
 
         if(numEsc == 0) {
-            var cubo1 = new cubo(new punto(-1,-1,-1),new punto(-1,1,-1),
-                                 new punto(-1,-1,1), new punto(-1,1,1),
-                                 new punto(1,-1,-1), new punto(1,1,-1),
-                                 new punto(1,-1,1), new punto(1,1,1));
+            var esca = 1;
+            var cubo1 = new cubo(new punto(-esca,-esca,-esca),new punto(-esca,esca,-esca),
+                                 new punto(-esca,-esca,esca), new punto(-esca,esca,esca),
+                                 new punto(esca,-esca,-esca), new punto(esca,esca,-esca),
+                                 new punto(esca,-esca,esca), new punto(esca,esca,esca));
             var cubochico = new objeto(escalar3D(0.5,1.3,0.5),cubo1,'cubo');
             var cubochico2 = new objeto(escalar3D(1.0,0.3,0.2),cubo1,'cubo');
             var o = [ new objeto(trasladar3D(0.0,2.0,0.0),[cubochico],'lista'),
@@ -767,15 +775,14 @@
                      new objeto(trasladar3D(-2.0,0.0,0.0),[cubochico],'lista'),
                      new objeto(trasladar3D(-3.0,-4.0,0.0),[cubochico2],'lista'),
                      new objeto(trasladar3D(-3.0,4.0,0.0),[cubochico2],'lista'),
-                     new objeto(trasladar3D(2.0,0.0,0.0),[cubochico2],'lista'),
-                     new objeto(trasladar3D(pos[0],pos[1],rotarAng),[cubochico2],'lista')];
+                     new objeto(trasladar3D(2.0,0.0,0.0),[cubochico2],'lista')];
 
             var esc = new objeto(id,o,'lista');
-            //esc.graf_obj(id,c1);
+            esc.graf_obj(prod_matriz3D(escalar3D(3.0,3.0,3.0),rotarX3D(1)),c2);
             bezier3D(c1);
         }
 
-        gl.enable(gl.DEPTH_TEST); // realiza z-buffer
+        gl.enable(gl.DEPTH_TEST); // aplica z-buffer
         
         initBuffers();
         dibujarEscena();
@@ -786,7 +793,7 @@
  
  
 <body onload="document.onkeyup = handleKeyUp; document.onkeydown = handleKeyDown; calc();"> 
-    <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 1 - Computaci&oacute;n Gr&aacute;fica UBA</div>
+    <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 3 - Computaci&oacute;n Gr&aacute;fica UBA</div>
     
     El trabajo pr&aacute;ctico propone la implementaci&oacute;n de algoritmos de discretizaci&oacute;n de l&iacute;neas (DDA y Bresenham), Conversi&oacute;n Scan de Pol&iacute;gonos convexos y grafo de escena.<br/>
     El tipo de l&iacute;nea no afecta al ejemplo de Conversi&oacute;n Scan.<br/>

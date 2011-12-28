@@ -18,6 +18,9 @@
     varying vec4 vPosition;
     varying vec3 vTransformedNormal;
     uniform vec3 uPointLightingLocation;
+    uniform vec3 uAmbientLight;
+    uniform vec3 uSpecularLight;
+    uniform vec3 uDiffuseLight;
  
     void main(void) { // phong
 
@@ -35,9 +38,9 @@
         float specularLightWeighting = pow(max(NH, 0.0), uMaterialShininess);
         float diffuseLightWeighting = max(dot(normal, lightDirection), 0.0);
 
-        vec3 spec = vec3(0.8,0.8,0.8) * specularLightWeighting;
-        vec3 diffuse = vec3(0.8,0.8,0.8) * diffuseLightWeighting;
-        spec += diffuse + vec3(0.2,0.2,0.2);
+        vec3 spec = normalize(uSpecularLight) * specularLightWeighting;
+        vec3 diffuse = normalize(uDiffuseLight) * diffuseLightWeighting;
+        spec += diffuse + normalize(uAmbientLight);//+ vec3(0.2,0.2,0.2);
 
         gl_FragColor = vec4(vColor.rgb * spec,vColor.a);
     }
@@ -92,6 +95,9 @@
     var mvMatrix = mat4.create();
     var currentlyPressedKeys = {};
     var pos = [-50.0,0.0,rotarAng];
+    var ambient = [0.2,0.2,0.2];
+    var specular = [0.2,0.2,0.2];
+    var diffuse = [0.2,0.2,0.2];
 
     function initGL(canvas) {
         try {
@@ -160,6 +166,16 @@
             shaderProgram.pointLightingLocationUniform,
             pos[0],pos[1],rotarAng
         );
+        gl.uniform3f(
+            shaderProgram.ambientLightUniform,
+            ambient[0],ambient[1],ambient[2]);
+        gl.uniform3f(
+            shaderProgram.specularLightUniform,
+            specular[0],specular[1],specular[2]);
+        gl.uniform3f(
+            shaderProgram.diffuseLightUniform,
+            diffuse[0],diffuse[1],diffuse[2]);
+
 
         gl.drawArrays(gl.TRIANGLES, 0, points.length/3);
     } 
@@ -735,6 +751,18 @@
             bezier3D(c1);
         }
 
+        ambient[0] = parseFloat(document.getElementById('ambR').value);
+        ambient[1] = parseFloat(document.getElementById('ambG').value);
+        ambient[2] = parseFloat(document.getElementById('ambB').value);
+
+        specular[0] = parseFloat(document.getElementById('specR').value);
+        specular[1] = parseFloat(document.getElementById('specG').value);
+        specular[2] = parseFloat(document.getElementById('specB').value);
+
+        diffuse[0] = parseFloat(document.getElementById('diffR').value);
+        diffuse[1] = parseFloat(document.getElementById('diffG').value);
+        diffuse[2] = parseFloat(document.getElementById('diffB').value);
+
         gl.enable(gl.DEPTH_TEST); // aplica z-buffer
         
         initBuffers();
@@ -755,24 +783,23 @@
     Colores <input id="color1" class="color" value="C7B68D" size=5 onchange="calc();">
     <input id="color2" class="color" value="FCFCFC" size=5 onchange="calc();">
     <input id="color3" class="color" value="C7B68D" size=5 onchange="calc();"><br/>
-    <input id="sigtLineamenos" type="button" value="<" onclick="tipoLinea--; if(tipoLinea<0) tipoLinea = tLinea.length-1; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>
-    <input id="sigtLineamas" type="button" value=">" onclick="tipoLinea++; tipoLinea%=tLinea.length; document.getElementById('tipoLinea').innerHTML=tLinea[tipoLinea]; calc();"/>Tipo de Linea: <span id="tipoLinea" >DDA</span>
-    <br/>
-
-    <input type="button" value="<" onclick="numEsc--; if(numEsc<0) numEsc = esc.length-1; numEsc%=esc.length; document.getElementById('escena').innerHTML=esc[numEsc]; calc();"/>
-    <input type="button" value=">" onclick="numEsc++; numEsc%=esc.length; document.getElementById('escena').innerHTML=esc[numEsc]; calc();"/>Escena: <span id="escena">Casa</span> <br/>
-    <input id="escalaXmenos" type="button" value="<" onclick="escalaX-=0.1; document.getElementById('escalaX').innerHTML=escalaX.toFixed(2); calc();"/>
-    <input id="escalaXmas" type="button" value=">" onclick="escalaX+=0.1; document.getElementById('escalaX').innerHTML=escalaX.toFixed(2); calc();"/>Escala X <span id="escalaX" >1.00</span><br/>
-    <input id="escalaYmenos" type="button" value="<" onclick="escalaY-=0.1; document.getElementById('escalaY').innerHTML=escalaY.toFixed(2); calc();"/>
-    <input id="escalaYmas" type="button" value=">" onclick="escalaY+=0.1; document.getElementById('escalaY').innerHTML=escalaY.toFixed(2); calc();"/>Escala Y <span id="escalaY" >1.00</span><br/>
-
-    <input id="trasladarXmenos" type="button" value="<" onclick="trasladarX-=0.5; document.getElementById('trasladarX').innerHTML=trasladarX.toFixed(2); calc();"/>
-    <input id="trasladarXmas" type="button" value=">" onclick="trasladarX+=0.5; document.getElementById('trasladarX').innerHTML=trasladarX.toFixed(2); calc();"/>Trasladar X <span id="trasladarX" >1.00</span><br/>
-    <input id="trasladarYmenos" type="button" value="<" onclick="trasladarY-=0.5; document.getElementById('trasladarY').innerHTML=trasladarY.toFixed(2); calc();"/>
-    <input id="trasladarYmas" type="button" value=">" onclick="trasladarY+=0.5; document.getElementById('trasladarY').innerHTML=trasladarY.toFixed(2); calc();"/>Trasladar Y <span id="trasladarY" >1.00</span><br/>
 
     <input id="rotarYmenos" type="button" value="<" onclick="rotarAng-=1; document.getElementById('rotar').innerHTML=rotarAng.toFixed(2); calc();"/>
     <input id="rotarYmas" type="button" value=">" onclick="rotarAng+=1; document.getElementById('rotar').innerHTML=rotarAng.toFixed(2); calc();"/>Rotar <span id="rotar" >0.0</span><br/>
+
+    Luz Ambiente <input type="text" id="ambR" value=0.2 size=5 />
+            <input type="text" id="ambG" value=0.2 size=5 />
+            <input type="text" id="ambB" value=0.2 size=5 /> <br/>
+
+    Luz Especular <input type="text" id="specR" value=0.2 size=5 />
+            <input type="text" id="specG" value=0.2 size=5 />
+            <input type="text" id="specB" value=0.2 size=5 /> <br/>
+
+    Luz Difusa <input type="text" id="diffR" value=0.2 size=5 />
+            <input type="text" id="diffG" value=0.2 size=5 />
+            <input type="text" id="diffB" value=0.2 size=5 />
+
+    <input type="button" value="Recalcular" onclick="calc();" />
 </body> 
  
 </html> 

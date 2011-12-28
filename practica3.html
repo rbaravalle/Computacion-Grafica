@@ -82,7 +82,7 @@
     var escalaY = 1;
     var trasladarX = 0;
     var trasladarY = 0;
-    var trasladarZ = -5;
+    var trasladarZ = -20;
     var rotarAng = 0;
     var ptosControl;
     var paso = 10;
@@ -185,15 +185,6 @@
             }
             ptosControl.push(pp);
         }
-        /*ptosControl = [[[1,0,0],[2,0,0],[3,0,0],[4,0,0],[5,0,0],[6,0,0],[7,0,0]],
-                       [[1,1,0],[2,1,0],[3,1,0],[4,1,0],[5,1,0],[6,1,0],[7,1,0]],
-                       [[1,2,0],[2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],[7,2,0]],
-                       [[1,3,0],[2,3,0],[3,3,0],[4,3,0],[5,3,0],[6,3,0],[7,3,0]],
-                       [[1,4,0],[2,4,0],[3,4,0],[4,4,0],[5,4,0],[6,4,0],[7,4,0]],
-                       [[1,5,0],[2,5,0],[3,5,0],[4,5,0],[5,5,0],[6,5,0],[7,5,0]],
-                       [[1,6,0],[2,6,0],[3,6,0],[4,6,0],[5,6,0],[6,6,0],[7,6,0]]
-                      ];*/
-        //alert(ptosControl)
     }
 
     function degToRad(degrees) {
@@ -365,29 +356,7 @@
             }
         }
 
-        var bv,bu;
-        /*for(var pj = 0; pj <= paso; pj++) {
-            ;//aux[pj] = [0,0,0]; // ??
-        }*/
- 
-    /*    for(var j = 0; j <= h.length-1; j++) {
-            bv = bernstein(v,j);
-            for(var i = 0; i <= h.length-1; i++) {
-
-               for(var pj = 0; pj <= paso; pj++) {
-                    v = pj/paso;
-                    //aux = [];
-                    for(var pi = 0; pi <= paso; pi++) {
-                        u = pi/paso;
-                        var p = [0,0,0];
-
-                        bu = bernstein(u,i)*bv;
-                            p[0] += bu*h[i][j][0];
-                            p[1] += bu*h[i][j][1];
-                            p[2] += bu*h[i][j][2];
-                    }
-                }
-*/
+       var bv,bu;
 
        for(var pj = 0; pj <= paso; pj++) {
             v = pj/paso;
@@ -418,8 +387,6 @@
                 var pD = [0,0,0];
                 
                 if(!aux[pi]) aux[pi]= p;
-                //putnormal(0.0,0.0,1.0);
-                //putnormal(0.0,0.0,1.0);
                 var p1, p4;
                 if(pj > 0 ) {
                     if(pi - 1  >= 0 ) p1 = {"x": aux[pi-1][0], "y": aux[pi-1][1], "z": aux[pi-1][2]};
@@ -429,15 +396,7 @@
                     if(pi - 1  >= 0 ) triangulo(p1,p2,p3,c);
                     if(pi + 1 <= paso) triangulo(p3,p2,p4,c);
                 }
-                //linea(new punto(aux[pi][0],aux[pi][1],aux[pi][2]),new punto(p[0],p[1],p[2]),c);
                 aux[pi] = p;
-            }
-            for(var pi = 1; pi <= paso; pi++) {
-                //putnormal(0.0,0.0,1.0);
-                //putnormal(0.0,0.0,1.0);
-                //if(pi == 4)
-                /*linea(new punto(aux[pi-1][0],aux[pi-1][1],aux[pi-1][2]),
-                     new punto(aux[pi][0],aux[pi][1],aux[pi][2]),c);*/
             }
         }
 
@@ -626,24 +585,6 @@
         }
     }
 
-    function rotarX(alpha) {
-        return [[Math.cos(alpha),-Math.sin(alpha),0],
-                [Math.sin(alpha),Math.cos(alpha),0],
-                [0,0,1]];
-    }
-
-    function rotarY(alpha) {
-        return [[Math.cos(alpha),-Math.sin(alpha),0],
-                [Math.sin(alpha),Math.cos(alpha),0],
-                [0,0,1]];
-    }
-
-    function rotarZ(alpha) {
-        return [[Math.cos(alpha),-Math.sin(alpha),0],
-                [Math.sin(alpha),Math.cos(alpha),0],
-                [0,0,1]];
-    }
-
     function rotarX3D(alpha) {
         return [
                 [1,0,0,0],
@@ -767,18 +708,27 @@
                                  new punto(-esca,-esca,esca), new punto(-esca,esca,esca),
                                  new punto(esca,-esca,-esca), new punto(esca,esca,-esca),
                                  new punto(esca,-esca,esca), new punto(esca,esca,esca));
-            var cubochico = new objeto(escalar3D(0.5,1.3,0.5),cubo1,'cubo');
-            var cubochico2 = new objeto(escalar3D(1.0,0.3,0.2),cubo1,'cubo');
+            var cubochico = new objeto(id,cubo1,'cubo');
             var o = [ new objeto(trasladar3D(0.0,2.0,0.0),[cubochico],'lista'),
                      new objeto(trasladar3D(0.0,-2.0,0.0),[cubochico],'lista'),
-                     new objeto(trasladar3D(2.0,0.0,0.0),[cubochico],'lista'),
-                     new objeto(trasladar3D(-2.0,0.0,0.0),[cubochico],'lista'),
-                     new objeto(trasladar3D(-3.0,-4.0,0.0),[cubochico2],'lista'),
-                     new objeto(trasladar3D(-3.0,4.0,0.0),[cubochico2],'lista'),
-                     new objeto(trasladar3D(2.0,0.0,0.0),[cubochico2],'lista')];
+                     //new objeto(trasladar3D(2.0,0.0,0.0),[cubochico],'lista'),
+                     new objeto(trasladar3D(0.0,0.0,0.0),[cubochico],'lista'),
+                     new objeto(trasladar3D(-2.0,-2.0,0.0),[cubochico],'lista'),
+                     new objeto(trasladar3D(-2.0,2.0,0.0),[cubochico],'lista'),
+                     new objeto(trasladar3D(-2.0,0.0,0.0),[cubochico],'lista')
+                    ];
 
-            var esc = new objeto(id,o,'lista');
-            esc.graf_obj(prod_matriz3D(escalar3D(3.0,3.0,3.0),rotarX3D(1)),c2);
+            var esc = new objeto(prod_matriz3D(escalar3D(1,1,2),trasladar3D(0.0,0.0,-0.0)),o,'lista');
+            var esc2 = new objeto(trasladar3D(8.0,2,-1.5),[esc],'lista');
+            var esc3 = new objeto(trasladar3D(4.0,2.0,-1.5),[esc],'lista');
+            var esc4 = new objeto(trasladar3D(4.0,7.0,-1.5),[esc],'lista');
+            var esc5 = new objeto(trasladar3D(7.0,7.0,-1.5),[esc],'lista');
+            var esc6 = new objeto(trasladar3D(8.0,2,-4.5),[esc],'lista');
+            var esc7 = new objeto(trasladar3D(4.0,2.0,-4.5),[esc],'lista');
+            var esc8 = new objeto(trasladar3D(4.0,7.0,-4.5),[esc],'lista');
+            var esc9 = new objeto(trasladar3D(7.0,7.0,-4.5),[esc],'lista');
+            var e = new objeto(id,[esc2,esc3,esc4,esc5,esc6,esc7,esc8,esc9],'lista');
+            e.graf_obj(id,c2);
             bezier3D(c1);
         }
 

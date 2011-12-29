@@ -21,6 +21,7 @@
     uniform vec3 uAmbientLight;
     uniform vec3 uSpecularLight;
     uniform vec3 uDiffuseLight;
+    uniform float uShininess;
  
     void main(void) { // phong
 
@@ -34,13 +35,12 @@
         vec3 halfv = normalize(eyeDirection + lightDirection);
         float NH = dot(normal,halfv);
 
-        float uMaterialShininess = 64.0;
-        float specularLightWeighting = pow(max(NH, 0.0), uMaterialShininess);
+        float specularLightWeighting = pow(max(NH, 0.0), uShininess);
         float diffuseLightWeighting = max(dot(normal, lightDirection), 0.0);
 
         vec3 spec = normalize(uSpecularLight) * specularLightWeighting;
         vec3 diffuse = normalize(uDiffuseLight) * diffuseLightWeighting;
-        spec += diffuse + normalize(uAmbientLight);//+ vec3(0.2,0.2,0.2);
+        spec += diffuse + normalize(uAmbientLight);
 
         gl_FragColor = vec4(vColor.rgb * spec,vColor.a);
     }
@@ -77,27 +77,23 @@
     var normalsBuffer;
     var normals;
     var maxcoord = 256;
-    var tipoLinea = 0;
-    var tLinea = ['DDA','Bresenham','Nativo'];
-    var esc = ['Casa','Linea','Conversion Scan'];
-    var numEsc = 0;
     var escalaX = 1;
     var escalaY = 1;
     var trasladarX = 0;
     var trasladarY = 0;
     var trasladarZ = -20;
-    var rotarAng = 0;
     var ptosControl;
     var paso = 10;
     var ang1 = 0;
-    var ang2 = 0;
+    var ang2 = -50;
     var pMatrix = mat4.create();
     var mvMatrix = mat4.create();
     var currentlyPressedKeys = {};
-    var pos = [-50.0,0.0,rotarAng];
+    var pos = [0.0,0.0,-100.0];
     var ambient = [0.2,0.2,0.2];
     var specular = [0.2,0.2,0.2];
     var diffuse = [0.2,0.2,0.2];
+    var shininess;
 
     function initGL(canvas) {
         try {
@@ -164,7 +160,7 @@
         gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
         gl.uniform3f(
             shaderProgram.pointLightingLocationUniform,
-            pos[0],pos[1],rotarAng
+            pos[0],pos[1],pos[2]
         );
         gl.uniform3f(
             shaderProgram.ambientLightUniform,
@@ -176,6 +172,9 @@
             shaderProgram.diffuseLightUniform,
             diffuse[0],diffuse[1],diffuse[2]);
 
+        gl.uniform1f(
+            shaderProgram.shininess,
+            shininess);
 
         gl.drawArrays(gl.TRIANGLES, 0, points.length/3);
     } 
@@ -192,11 +191,11 @@
             var pp = [];
             for(var j = 0; j < cant; j++) {
                 z = 0.0;
-                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = 50.0;
-                if((j >= 9 && i >= 9) && (j <= 10 && i <= 10)) z = 50.0;
-                if((j >= 9 && i >= 1) && (j <= 10 && i <= 2)) z = 50.0;
-                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = 50.0;
-                if((j >= 1 && i >= 9) && (j <= 2 && i <= 10)) z = 50.0;
+                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = -50.0;
+                if((j >= 9 && i >= 9) && (j <= 10 && i <= 10)) z = -50.0;
+                if((j >= 9 && i >= 1) && (j <= 10 && i <= 2)) z = -50.0;
+                if((j >= 1 && i >= 1) && (j <= 2 && i <= 2)) z = -50.0;
+                if((j >= 1 && i >= 9) && (j <= 2 && i <= 10)) z = -50.0;
                 pp.push([i,j,z]);
             }
             ptosControl.push(pp);
@@ -220,98 +219,6 @@
 
     function putnormal(x,y,z) {
         normals.push(x,y,z);
-    }
-
-    function lineaDDA(x0,y0,x1,y1,c1,c2) {
-        var dx = x1-x0;
-        var dy = y1-y0;
-
-        var x = x0;
-        var y = y0;
-
-        var c = c1;
-        var ri,gi,bi;
-
-        if(Math.abs(dx) > Math.abs(dy)) {
-            if(dx>=0) inc = 1; else inc =-1;
-            var m = dy/dx;
-            if((dy < 0 && m > 0) || (dy > 0 && m < 0)) m = -m;
-            var ult = false;
-            while(!ult) {
-                if(x==x1) ult = 1;
-                if(c2) {
-                    if(y0-y1 != 0)
-                        p = (y0-Math.round(y))/(y0-y1); // y actual
-                    else p = (x0-Math.round(x))/(x0-x1);
-                    ri = c1[0] - (c1[0]-c2[0])*p;
-                    gi = c1[1] - (c1[1]-c2[1])*p;
-                    bi = c1[2] - (c1[2]-c2[2])*p;
-                    c = [ri,gi,bi];
-                }
-
-                putpixel(Math.round(x),Math.round(y),c);
-                x+=inc;
-                y+=m;
-            }
-        }
-        else {
-            if(dy>=0) inc = 1; else inc = -1;
-            var m = dx/dy;
-            if((dx < 0 && m > 0) || (dx > 0 && m < 0)) m = -m;
-            var ult = false;
-            while(!ult) {
-                if(y==y1) ult = 1;
-                if(c2) {
-                    if(y0-y1 != 0)
-                        p = (y0-Math.round(y))/(y0-y1); // y actual
-                    else p = (x0-Math.round(x))/(x0-x1);
-                    ri = c1[0] - (c1[0]-c2[0])*p;
-                    gi = c1[1] - (c1[1]-c2[1])*p;
-                    bi = c1[2] - (c1[2]-c2[2])*p;
-                    c = [ri,gi,bi];
-                }
-                putpixel(Math.round(x),Math.round(y),c);
-                y+=inc;
-                x+=m;
-            }
-        }
-    }
-
-    function lineaBresenham(x0,y0,x1,y1,c) {
-        var dx = x1-x0;
-        var dy = y1-y0;
-
-        var ix = 2*dx;
-        var iy = 2*dy;
-
-        var x = x0;
-        var y = y0;
-
-        if(dx>=0) incX = 1; else incX = -1;
-        if(dy>=0) incY = 1; else incY = -1;
-        
-        if(Math.abs(dx) >= Math.abs(dy)) {
-            var e = iy-dx;
-            for (var x = x0; x != x1; x+=incX) {
-                putpixel(x,y,c);
-                if(e>0) {
-                    y+=incY;
-                    e -= Math.abs(ix);
-                }
-                e += Math.abs(iy);        
-            }
-        }
-        else {
-            var e = ix-dy;
-            for (var y = y0; y != y1; y+=incY) {
-                putpixel(x,y,c);
-                if(e>0) {
-                    x+=incX;
-                    e -= Math.abs(iy);
-                }
-                e += Math.abs(ix);
-            }
-        }
     }
 
     function bernstein(u,i) {
@@ -419,30 +326,11 @@
     }
 
 
-    function alertar(p) {
-        var str = "";
-        for(var i = 0; i < p.length; i++)
-            str += p;
-        alert(str);
-    }
-
-    function linea(p1,p2,c) {
-        putpixel(Math.floor(p1.x),Math.floor(p1.y),Math.floor(p1.z),c);
-        putpixel(Math.floor(p2.x),Math.floor(p2.y),Math.floor(p2.z),c);
-    }
-
     function punto(x,y,z,c) {
         this.x = x;
         this.y = y;
         this.z = z;
         this.c = c;
-    }
-
-    function cuad(p1,p2,p3,p4) {
-        this.p1 = p1;
-        this.p2 = p2;
-        this.p3 = p3;
-        this.p4 = p4;
     }
 
     function cubo(p1,p2,p3,p4,p5,p6,p7,p8) {
@@ -540,53 +428,22 @@
 
         // cara 1
         triangulo(p6,p5,p1,c); // adelante
-        triangulo(p1,p2,p6,c);
-        /*linea(p1,p5,c);
-        linea(p5,p6,c);
-        linea(p6,p2,c);
-        linea(p2,p1,c);*/
-
+        triangulo(p1,p2,p6,c);        
         // cara 2
         triangulo(p8,p7,p5,c); // derecha
         triangulo(p5,p6,p8,c);
-        /*linea(p5,p7,c);
-        linea(p7,p8,c);
-        linea(p8,p6,c);
-        linea(p6,p5,c);*/
-
         // cara 5
         triangulo(p8,p6,p2,c);
         triangulo(p2,p4,p8,c); // arriba
-        /*linea(p2,p6,c);
-        linea(p6,p8,c);
-        linea(p8,p4,c);
-        linea(p4,p2,c);*/
-
         // cara 3
         triangulo(p4,p8,p7,c); // atras
         triangulo(p7,p3,p4,c);
-        /*linea(p7,p8,c);
-        linea(p8,p4,c);
-        linea(p4,p3,c);
-        linea(p3,p7,c);*/
-
         // cara 4
         triangulo(p2,p4,p3,c); // izquierda
         triangulo(p3,p1,p2,c);
-        /*linea(p3,p4,c);
-        linea(p4,p2,c);
-        linea(p2,p1,c);
-        linea(p1,p3,c);*/
-
-
         // cara 6
         triangulo(p5,p1,p3,c); // abajo
         triangulo(p3,p7,p5,c);
-        /*linea(p1,p5,c);
-        linea(p5,p7,c);
-        linea(p7,p3,c);
-        linea(p3,p1,c);*/
-
     }
 
     objeto.prototype.graf_obj = function(t,c) {
@@ -634,17 +491,28 @@
     }
 
     function reset() {;
-        escalaX = 1;
-        escalaY = 1;
         trasladarX = 0;
         trasladarY = 0;
-        rotarAng = 0;        
+        trasladarZ = -20;
+        ang1 = 0;
+        ang2 = -50;
 
-        document.getElementById('rotar').innerHTML=rotarAng.toFixed(2);
-        document.getElementById('escalaX').innerHTML=escalaX.toFixed(2);
-        document.getElementById('escalaY').innerHTML=escalaY.toFixed(2);
-        document.getElementById('trasladarX').innerHTML=trasladarX.toFixed(2);
-        document.getElementById('trasladarY').innerHTML=trasladarY.toFixed(2);
+        document.getElementById('luzX').value=0.0;
+        document.getElementById('luzY').value=0.0;
+        document.getElementById('luzZ').value=-100.0;
+
+        document.getElementById('ambR').value=0.2;
+        document.getElementById('ambG').value=0.2;
+        document.getElementById('ambB').value=0.2;
+
+        document.getElementById('specR').value=0.2;
+        document.getElementById('specG').value=0.2;
+        document.getElementById('specB').value=0.2;
+
+        document.getElementById('diffR').value=0.2;
+        document.getElementById('diffG').value=0.2;
+        document.getElementById('diffB').value=0.2;
+        document.getElementById('shininess').value=64;
 
         calc();
     }
@@ -667,18 +535,18 @@
 
         if (currentlyPressedKeys[38]) {
           // Up cursor key
-          trasladarZ += 0.1;
+          trasladarZ += 0.5;
         }
         if (currentlyPressedKeys[40]) {
           // Down cursor key
-          trasladarZ -= 0.1;
+          trasladarZ -= 0.5;
         }
 
         if (currentlyPressedKeys[37]) { // left
-          trasladarX -= 0.1;
+          trasladarX -= 0.5;
         }
         if (currentlyPressedKeys[39]) { // right
-          trasladarX += 0.1;
+          trasladarX += 0.5;
         }
 
         if (currentlyPressedKeys[33]) { // Page Up
@@ -718,38 +586,39 @@
               parseFloat(jscolor2.color.rgb[1]),
               parseFloat(jscolor2.color.rgb[2])];
 
-        if(numEsc == 0) {
-            var esca = 1;
-            var cubo1 = new cubo(new punto(-esca,-esca,-esca),new punto(-esca,esca,-esca),
-                                 new punto(-esca,-esca,esca), new punto(-esca,esca,esca),
-                                 new punto(esca,-esca,-esca), new punto(esca,esca,-esca),
-                                 new punto(esca,-esca,esca), new punto(esca,esca,esca));
-            var cubochico = new objeto(id,cubo1,'cubo');
-            var o = [ new objeto(trasladar3D(0.0,2.0,0.0),[cubochico],'lista'),
-                     new objeto(trasladar3D(0.0,-2.0,0.0),[cubochico],'lista'),
-                     //new objeto(trasladar3D(2.0,0.0,0.0),[cubochico],'lista'),
-                     //new objeto(trasladar3D(0.0,0.0,0.0),[cubochico],'lista'),
-                     //new objeto(trasladar3D(-2.0,-2.0,0.0),[cubochico],'lista'),
-                     //new objeto(trasladar3D(-2.0,2.0,0.0),[cubochico],'lista'),
-                     new objeto(trasladar3D(-2.0,0.0,0.0),[cubochico],'lista')
-                    ];
+        var esca = 1;
+        var cubo1 = new cubo(new punto(-esca,-esca,-esca),new punto(-esca,esca,-esca),
+                             new punto(-esca,-esca,esca), new punto(-esca,esca,esca),
+                             new punto(esca,-esca,-esca), new punto(esca,esca,-esca),
+                             new punto(esca,-esca,esca), new punto(esca,esca,esca));
+        var cuboO = new objeto(id,cubo1,'cubo');
+        var o = [ new objeto(trasladar3D(0.0,2.0,0.0),[cuboO],'lista'),
+                 new objeto(trasladar3D(0.0,-2.0,0.0),[cuboO],'lista'),
+                 new objeto(trasladar3D(-2.0,0.0,0.0),[cuboO],'lista')
+                ];
 
-            var esc = new objeto(prod_matriz3D(escalar3D(1,1,2),trasladar3D(0.0,0.0,-0.0)),o,'lista');
-            var esc2 = new objeto(trasladar3D(8.0,2,-1.5),[esc],'lista');
-            var esc3 = new objeto(trasladar3D(4.0,2.0,-1.5),[esc],'lista');
-            var esc4 = new objeto(trasladar3D(4.0,7.0,-1.5),[esc],'lista');
-            var esc5 = new objeto(trasladar3D(7.0,7.0,-1.5),[esc],'lista');
+        var esc = new objeto(prod_matriz3D(escalar3D(1,1,2),trasladar3D(0.0,0.0,-0.0)),o,'lista');
+        var esc2 = new objeto(trasladar3D(8.0,2,-1.5),[esc],'lista');
+        var esc3 = new objeto(trasladar3D(4.0,2.0,-1.5),[esc],'lista');
+        var esc4 = new objeto(trasladar3D(4.0,7.0,-1.5),[esc],'lista');
+        var esc5 = new objeto(trasladar3D(7.0,7.0,-1.5),[esc],'lista');
 
-            var esc7 = new objeto(trasladar3D(4.0,2.0,-4.5),[esc],'lista');
-            var esc8 = new objeto(trasladar3D(4.0,7.0,-4.5),[esc],'lista');
-            //var esc9 = new objeto(trasladar3D(7.0,7.0,-4.5),[esc],'lista');
-            var esc6 = new objeto(trasladar3D(7.0,7.0,-7.5),[esc],'lista');
-            var esc9 = new objeto(trasladar3D(7.0,4.0,-7.5),[esc],'lista');
-            var esc10 = new objeto(trasladar3D(7.0,4.0,-10.5),[esc],'lista');
-            var e = new objeto(id,[esc2,esc3,esc4,esc5,/*esc6,esc7,*/esc8,esc9,esc6],'lista');
-            e.graf_obj(id,c2);
-            bezier3D(c1);
-        }
+        var esc7 = new objeto(trasladar3D(4.0,2.0,-10.5),[esc],'lista');
+        var esc8 = new objeto(trasladar3D(4.0,7.0,-4.5),[esc],'lista');
+        var esc6 = new objeto(trasladar3D(7.0,7.0,-7.5),[esc],'lista');
+        var esc9 = new objeto(trasladar3D(7.0,4.0,-7.5),[esc],'lista');
+        var esc11 = new objeto(trasladar3D(7.0,4.0,-10.5),[esc],'lista');
+        var esc10 = new objeto(trasladar3D(7.0,4.0,-10.5),[esc],'lista');
+        var esc12 = new objeto(trasladar3D(7.0,4.0,-13.5),[esc],'lista');
+        var esc13 = new objeto(trasladar3D(7.0,4.0,-16.5),[esc],'lista');
+        var e = new objeto(id,
+                    [esc2,esc3,esc4,esc5,esc8,esc9,esc6,esc7,esc11,esc12,esc13],'lista');
+        e.graf_obj(escalar3D(1.0,1.0,-1.0),c2);
+        bezier3D(c1);
+
+        pos[0] = parseFloat(document.getElementById('luzX').value);
+        pos[1] = parseFloat(document.getElementById('luzY').value);
+        pos[2] = parseFloat(document.getElementById('luzZ').value);
 
         ambient[0] = parseFloat(document.getElementById('ambR').value);
         ambient[1] = parseFloat(document.getElementById('ambG').value);
@@ -762,6 +631,12 @@
         diffuse[0] = parseFloat(document.getElementById('diffR').value);
         diffuse[1] = parseFloat(document.getElementById('diffG').value);
         diffuse[2] = parseFloat(document.getElementById('diffB').value);
+
+        shininess = parseFloat(document.getElementById('shininess').value);
+
+        document.getElementById('posX').innerHTML = trasladarX.toFixed(2);
+        document.getElementById('posY').innerHTML = trasladarY.toFixed(2);
+        document.getElementById('posZ').innerHTML = trasladarZ.toFixed(2);
 
         gl.enable(gl.DEPTH_TEST); // aplica z-buffer
         
@@ -776,30 +651,46 @@
 <body onload="document.onkeyup = handleKeyUp; document.onkeydown = handleKeyDown; calc();"> 
     <div style="text-align:center; font-size:30px">Trabajo Pr&aacute;ctico 3 - Computaci&oacute;n Gr&aacute;fica UBA</div>
     
-    El trabajo pr&aacute;ctico propone la implementaci&oacute;n de algoritmos de discretizaci&oacute;n de l&iacute;neas (DDA y Bresenham), Conversi&oacute;n Scan de Pol&iacute;gonos convexos y grafo de escena.<br/>
-    El tipo de l&iacute;nea no afecta al ejemplo de Conversi&oacute;n Scan.<br/>
+    Escultura sobre una silla<br/>
     <canvas id="canvas" width="800" height="800" style="float:left"></canvas>  
     <input id="reset" type="button" value="Reset" onclick="reset();"/><br/>
     Colores <input id="color1" class="color" value="C7B68D" size=5 onchange="calc();">
     <input id="color2" class="color" value="FCFCFC" size=5 onchange="calc();">
-    <input id="color3" class="color" value="C7B68D" size=5 onchange="calc();"><br/>
+    <br/>
 
-    <input id="rotarYmenos" type="button" value="<" onclick="rotarAng-=1; document.getElementById('rotar').innerHTML=rotarAng.toFixed(2); calc();"/>
-    <input id="rotarYmas" type="button" value=">" onclick="rotarAng+=1; document.getElementById('rotar').innerHTML=rotarAng.toFixed(2); calc();"/>Rotar <span id="rotar" >0.0</span><br/>
+    <input type="text" id="luzX" value=0.0 size=5 />
+    <input type="text" id="luzY" value=0.0 size=5 />
+    <input type="text" id="luzZ" value=-100.0 size=5 /> Posici&oacute;n de la Luz <br/>
 
-    Luz Ambiente <input type="text" id="ambR" value=0.2 size=5 />
-            <input type="text" id="ambG" value=0.2 size=5 />
-            <input type="text" id="ambB" value=0.2 size=5 /> <br/>
+    <input type="text" id="ambR" value=0.2 size=5 />
+    <input type="text" id="ambG" value=0.2 size=5 />
+    <input type="text" id="ambB" value=0.2 size=5 /> Luz Ambiente <br/>
 
-    Luz Especular <input type="text" id="specR" value=0.2 size=5 />
-            <input type="text" id="specG" value=0.2 size=5 />
-            <input type="text" id="specB" value=0.2 size=5 /> <br/>
+    <input type="text" id="specR" value=0.2 size=5 />
+    <input type="text" id="specG" value=0.2 size=5 />
+    <input type="text" id="specB" value=0.2 size=5 /> Luz Especular <br/>
 
-    Luz Difusa <input type="text" id="diffR" value=0.2 size=5 />
-            <input type="text" id="diffG" value=0.2 size=5 />
-            <input type="text" id="diffB" value=0.2 size=5 />
+    <input type="text" id="diffR" value=0.2 size=5 />
+    <input type="text" id="diffG" value=0.2 size=5 />
+    <input type="text" id="diffB" value=0.2 size=5 /> Luz Difusa<br />
+
+    <input type="text" id="shininess" value=64 size=5 />Especularidad (coeficiente del modelo de iluminaci&oactue;n de Phong)
+    <br/>
+
+    <span id="posX" >0.0</span> | <span id="posY" >0.0</span> | <span id="posZ" >-20.0</span> Posici&oacute;n Observador (X,Y,Z)<br/>
 
     <input type="button" value="Recalcular" onclick="calc();" />
+
+    <br/>
+    <br/>
+    <span id="instr">
+    Instrucciones:<br/>
+    Flecha izquierda, derecha: desplazamiento X <br/>
+    pageUp, pageDown: desplazamiento Y <br/>
+    Flecha arriba, abajo: desplazamiento Z <br/>
+    A,S,W,D: rotar el modelo
+    </span>
+
 </body> 
  
 </html> 
